@@ -802,9 +802,11 @@ function listen(col) {
 ['todo','relances','rdv','fm'].forEach(listen);
 
 window.switchTab = t => {
-  ['todo','relances','rdv','fm'].forEach(x => {
-    document.getElementById('panel-'+x).classList.toggle('active', x===t);
-    document.getElementById('tab-'+x).classList.toggle('active', x===t);
+  ['todo','relances','rdv','fm','lancements'].forEach(x => {
+    const p = document.getElementById('panel-'+x);
+    const b = document.getElementById('tab-'+x);
+    if(p) p.classList.toggle('active', x===t);
+    if(b) b.classList.toggle('active', x===t);
   });
 };
 
@@ -1029,16 +1031,7 @@ const INIT_LANCEMENTS = [{"commune": "Chennevières-sur-Marne", "statut": "Réal
 // ── Listen lancements ──
 listen('lancements');
 
-// ── Extend switchTab ──
-const _origSwitch = window.switchTab;
-window.switchTab = t => {
-  ['todo','relances','rdv','fm','lancements'].forEach(x => {
-    const p = document.getElementById('panel-'+x);
-    const b = document.getElementById('tab-'+x);
-    if(p) p.classList.toggle('active', x===t);
-    if(b) b.classList.toggle('active', x===t);
-  });
-};
+// switchTab already defined above
 
 // ── Extend render for lancements ──
 const _origRender = window.render;
@@ -1166,6 +1159,16 @@ setTimeout(() => {
   if(data.lancements.length === 0) seedIfEmpty('lancements', INIT_LANCEMENTS);
 }, 3000);
 
+</script>
+
+<script>
+// Bridge: expose module-defined functions to inline onclick handlers
+function switchTab(t) { if(window.switchTab) window.switchTab(t); }
+function openModal(t,id) { if(window.openModal) window.openModal(t,id); }
+function closeModal() { if(window.closeModal) window.closeModal(); }
+function saveModal(t) { if(window.saveModal) window.saveModal(t); }
+function delRow(t,id) { if(window.delRow) window.delRow(t,id); }
+function render() { if(window.render) window.render(); }
 </script>
 </body>
 </html>
