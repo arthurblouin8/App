@@ -531,6 +531,7 @@
     <button class="tab" onclick="switchTab('relances')" id="tab-relances">🔔 Relances <span class="count" id="cnt-relances">—</span></button>
     <button class="tab" onclick="switchTab('rdv')" id="tab-rdv">📅 RDV <span class="count" id="cnt-rdv">—</span></button>
     <button class="tab" onclick="switchTab('fm')" id="tab-fm">🗄 FileMaker <span class="count" id="cnt-fm">—</span></button>
+    <button class="tab" onclick="switchTab('lancements')" id="tab-lancements">🚀 Lancements <span class="count" id="cnt-lancements">—</span></button>
   </div>
 
   <!-- TO-DO -->
@@ -627,6 +628,42 @@
     </table></div>
   </div>
 
+
+  <!-- LANCEMENTS -->
+  <div id="panel-lancements" class="panel">
+    <div class="section-kicker">Suivi des lancements terrain</div>
+    <div class="stats-row">
+      <div class="stat-card accent-green"><div class="stat-label">Réalisés</div><div class="stat-val" id="s-l1">—</div></div>
+      <div class="stat-card"><div class="stat-label">Programmés</div><div class="stat-val" id="s-l2">—</div></div>
+      <div class="stat-card accent-yellow"><div class="stat-label">En discussion</div><div class="stat-val" id="s-l3">—</div></div>
+      <div class="stat-card accent-coral"><div class="stat-label">À planifier</div><div class="stat-val" id="s-l4">—</div></div>
+      <div class="stat-card accent-navy"><div class="stat-label">Total</div><div class="stat-val" id="s-l5">—</div></div>
+    </div>
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <select id="fl-stat" onchange="render()"><option value="">Tous les statuts</option><option>Réalisé</option><option>Programmé</option><option>En discussion</option><option>Date à confirmer</option><option>À planifier</option></select>
+        <input type="text" id="fl-search" placeholder="Rechercher une commune…" oninput="render()" style="font-size:13px;padding:7px 12px;border-radius:8px;border:2px solid #E0EDF5;background:white;color:#1B2A6B;font-family:inherit;width:200px;outline:none;">
+      </div>
+      <button class="add-btn" onclick="openModal('lancements',null)">+ Ajouter un lancement</button>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th style="width:16%">Commune</th>
+        <th style="width:12%">Statut</th>
+        <th style="width:10%">Date</th>
+        <th style="width:12%">Département</th>
+        <th style="width:7%">👕 Chas.</th>
+        <th style="width:7%">📦 Kit</th>
+        <th style="width:7%">🌐 Site</th>
+        <th style="width:7%">🪧 Kak.</th>
+        <th style="width:7%">📧 Merci</th>
+        <th style="width:10%">Référent</th>
+        <th style="width:5%"></th>
+      </tr></thead>
+      <tbody id="tbody-lancements"><tr><td colspan="11" class="loading-row">Chargement…</td></tr></tbody>
+    </table></div>
+  </div>
+
 </div><!-- .app -->
 
 <!-- MODAL -->
@@ -649,10 +686,10 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
-const COLS = { todo:'todo', relances:'relances', rdv:'rdv', fm:'fm' };
+const COLS = { todo:'todo', relances:'relances', rdv:'rdv', fm:'fm', lancements:'lancements' };
 
 let data   = { todo:[], relances:[], rdv:[], fm:[] };
-let loaded = { todo:false, relances:false, rdv:false, fm:false };
+let loaded = { todo:false, relances:false, rdv:false, fm:false, lancements:false };
 let editCtx = null;
 
 function setSync(s) {
@@ -985,6 +1022,150 @@ window.saveModal = async type => {
 document.getElementById('modal-bg').addEventListener('click', e => {
   if(e.target===document.getElementById('modal-bg')) closeModal();
 });
+
+// ── LANCEMENTS DATA ──
+const INIT_LANCEMENTS = [{"commune": "Chennevières-sur-Marne", "statut": "Réalisé", "date": "04/06/2025", "departement": "Val-de-Marne", "chasubles": "Oui", "kitComm": "Oui", "site": "Oui", "kakemono": "Oui", "mailMerci": "Oui", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Valenton", "statut": "Réalisé", "date": "13/06/2025", "departement": "Val-de-Marne", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Asnières", "statut": "Réalisé", "date": "23/06/2025", "departement": "Hauts - de - Seine", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Maisons-Alfort", "statut": "Réalisé", "date": "25/06/2025", "departement": "Val-de-Marne", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Vincennes", "statut": "Réalisé", "date": "30/06/2025", "departement": "Val-de-Marne", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Landivisiau", "statut": "Réalisé", "date": "27/06/2025", "departement": "Finistère", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Pont-l'Abbé", "statut": "Réalisé", "date": "01/07/2025", "departement": "Finistère", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Le Conquet", "statut": "En discussion", "date": "01/07/2025", "departement": "Finistère", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Saint-Renan", "statut": "En discussion", "date": "01/07/2025", "departement": "Finistère", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Saint Gemme", "statut": "Réalisé", "date": "27/08/2025", "departement": "Charente-Maritime", "chasubles": "?", "kitComm": "Oui", "site": "Oui", "kakemono": "Oui", "mailMerci": "Oui", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Louviers", "statut": "Réalisé", "date": "28/08/2025", "departement": "Normandie", "chasubles": "Oui", "kitComm": "Oui", "site": "Avorté", "kakemono": "Oui", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Orly", "statut": "Réalisé", "date": "28/08/2025", "departement": "Val-de-Marne", "chasubles": "Oui", "kitComm": "Oui", "site": "Oui", "kakemono": "Oui", "mailMerci": "Oui", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Riom", "statut": "Réalisé", "date": "29/08/2025", "departement": "Puy-de-Dôme", "chasubles": "Oui", "kitComm": "Oui", "site": "Oui", "kakemono": "Oui", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Issoire", "statut": "Réalisé", "date": "29/08/2025", "departement": "Puy-de-Dôme", "chasubles": "Oui", "kitComm": "Oui", "site": "Oui", "kakemono": "Oui", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Beaumont", "statut": "Réalisé", "date": "29/08/2025", "departement": "Puy-de-Dôme", "chasubles": "Oui", "kitComm": "Oui", "site": "Oui", "kakemono": "Oui", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Chatel-Guyon", "statut": "Réalisé", "date": "29/08/2025", "departement": "Puy-de-Dôme", "chasubles": "Oui", "kitComm": "Non", "site": "Non", "kakemono": "Oui", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Saint Pée sur Nivelle", "statut": "Réalisé", "date": "29/08/2025", "departement": "Pyrénées-Atlantiques", "chasubles": "Oui", "kitComm": "Oui", "site": "Oui", "kakemono": "Oui", "mailMerci": "Oui", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Saint-Leu", "statut": "Réalisé", "date": "30/08/2025", "departement": "La Réunion", "chasubles": "Oui", "kitComm": "Oui", "site": "Non", "kakemono": "Oui", "mailMerci": "Oui", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Saint-Aubin-La-Plaine", "statut": "Réalisé", "date": "03/10/2025", "departement": "Vendée", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Oui", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Laissey", "statut": "Réalisé", "date": "20/10/2025", "departement": "Val-d'Oise", "chasubles": "Non", "kitComm": "Oui", "site": "Oui", "kakemono": "Non", "mailMerci": "Oui", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Villars-en-Pons", "statut": "Réalisé", "date": "18/04/2026", "departement": "Charente-Maritime", "chasubles": "Oui", "kitComm": "Oui", "site": "Oui", "kakemono": "Oui", "mailMerci": "Oui", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Beurlay", "statut": "Réalisé", "date": "06/05/2026", "departement": "Charente-Maritime", "chasubles": "Oui", "kitComm": "Oui", "site": "Oui", "kakemono": "Oui", "mailMerci": "Oui", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Saint Pierre du Regard", "statut": "Réalisé", "date": "23/04/2026", "departement": "Orne", "chasubles": "Oui", "kitComm": "Oui", "site": "Oui", "kakemono": "Oui", "mailMerci": "Oui", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Haisnes", "statut": "Réalisé", "date": "22/04/2026", "departement": "Pas-de-Calais", "chasubles": "Oui", "kitComm": "Oui", "site": "Oui", "kakemono": "Oui", "mailMerci": "Oui", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Noyelles sous Lens", "statut": "Réalisé", "date": "octobre", "departement": "Pas-de-Calais", "chasubles": "Non", "kitComm": "Oui", "site": "Oui", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Lespignan", "statut": "Réalisé", "date": "?", "departement": "Hérault", "chasubles": "Non", "kitComm": "Oui", "site": "Oui", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Bitche", "statut": "Date à confirmer", "date": "?", "departement": "Moselle", "chasubles": "Oui", "kitComm": "Oui", "site": "Oui", "kakemono": "Oui", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Pyrénées Atlantiques", "statut": "Réalisé", "date": "11/05/2026", "departement": "Pyrénées Atlantiques", "chasubles": "Oui", "kitComm": "Oui", "site": "Oui", "kakemono": "Oui", "mailMerci": "Oui", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Puy-de-Dôme", "statut": "Réalisé", "date": "28/05/2026", "departement": "Puy-de-Dôme", "chasubles": "Non", "kitComm": "Oui", "site": "Oui", "kakemono": "Oui", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Le Cloitres", "statut": "Date à confirmer", "date": "?", "departement": "Finistère", "chasubles": "Laurent", "kitComm": "Oui", "site": "Oui", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Collège Sainte-Marie à Aizenay", "statut": "Réalisé", "date": "23/03/2026", "departement": "Vendée", "chasubles": "Oui", "kitComm": "Oui", "site": "/", "kakemono": "Oui", "mailMerci": "/", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Collège Jacqueline Auriol à Challans", "statut": "Réalisé", "date": "21/05/2026", "departement": "Vendée", "chasubles": "Oui", "kitComm": "Oui", "site": "/", "kakemono": "Oui", "mailMerci": "/", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Collège Lycée des Etablières", "statut": "Date à confirmer", "date": "01/09/2026", "departement": "Vendée", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Collège Edouard Herriot", "statut": "Date à confirmer", "date": "02/09/2026", "departement": "Vendée", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Pré d'Anjou", "statut": "À planifier", "date": "31 mars 19h", "departement": "CD53 Mayenne", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Saint-Maur-des-Fossés", "statut": "Réalisé", "date": "19/12/2024", "departement": "CD94 Val de Marne", "chasubles": "Oui", "kitComm": "Oui", "site": "Oui", "kakemono": "Oui", "mailMerci": "Oui", "referent": "Meredith Belliard", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "La motte Servolex", "statut": "Réalisé", "date": "", "departement": "", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Oui", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "La Baulle", "statut": "En discussion", "date": "", "departement": "", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Alfortville", "statut": "En discussion", "date": "13/03/2025", "departement": "CD94 Val de Marne", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Argonne Champenoise", "statut": "En discussion", "date": "1er Fevrier ?", "departement": "", "chasubles": "Oui", "kitComm": "Non", "site": "Non", "kakemono": "Oui", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Ergue-Gaberic", "statut": "En discussion", "date": "29/03/2025", "departement": "", "chasubles": "Non", "kitComm": "NON (Mais prêt)", "site": "Oui", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Le Fenouillé", "statut": "À planifier", "date": "", "departement": "", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Pouzauges", "statut": "À planifier", "date": "", "departement": "CD85 Vendée", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Soulignonnes", "statut": "À planifier", "date": "", "departement": "", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Sables d'Olonne ?", "statut": "À planifier", "date": "", "departement": "CD85 Vendée", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Merville", "statut": "À planifier", "date": "", "departement": "Autre 59", "chasubles": "Livrer", "kitComm": "Oui", "site": "Oui", "kakemono": "Recu par la mairie", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Champigny-sur-Marne", "statut": "Réalisé", "date": "10/04/2025", "departement": "CD94 Val de Marne", "chasubles": "Oui", "kitComm": "Oui", "site": "Oui", "kakemono": "Oui", "mailMerci": "Oui", "referent": "Grégory Vincens", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Villeneuve-Saint-Georges", "statut": "Réalisé", "date": "17/04/2025", "departement": "CD94 Val de Marne", "chasubles": "Oui", "kitComm": "Oui", "site": "Oui", "kakemono": "Oui", "mailMerci": "Oui", "referent": "Chainez Sghair", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Montesson", "statut": "À planifier", "date": "", "departement": "", "chasubles": "Livrer", "kitComm": "Non", "site": "Non", "kakemono": "Recu par la mairie", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Le Mans", "statut": "À planifier", "date": "", "departement": "", "chasubles": "Non", "kitComm": "Non", "site": "Oui", "kakemono": "Recu par la mairie", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Lagorce", "statut": "À planifier", "date": "", "departement": "", "chasubles": "Non", "kitComm": "Oui", "site": "Oui", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Sainte suzanne", "statut": "À planifier", "date": "14/04/2025", "departement": "", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Oui", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Collège Evron", "statut": "À planifier", "date": "", "departement": "", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Meze", "statut": "À planifier", "date": "29/04/2025", "departement": "", "chasubles": "Oui", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Agde", "statut": "À planifier", "date": "01/04/2025", "departement": "", "chasubles": "Oui", "kitComm": "Oui", "site": "Oui", "kakemono": "Oui", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Rousset 13190", "statut": "À planifier", "date": "16/05/2025", "departement": "13", "chasubles": "Recu par la mairie", "kitComm": "Oui", "site": "Oui", "kakemono": "Recu par la mairie", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Villiers les Nancy", "statut": "À planifier", "date": "", "departement": "", "chasubles": "Oui", "kitComm": "Non", "site": "Oui", "kakemono": "Oui", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Paris 15", "statut": "À planifier", "date": "", "departement": "", "chasubles": "Oui", "kitComm": "Non il nous manque un 06", "site": "Non", "kakemono": "Oui", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Nogent-sur-Marne", "statut": "Programmé", "date": "22/05/2025", "departement": "CD94 Val de Marne", "chasubles": "Non", "kitComm": "Oui", "site": "Oui", "kakemono": "Non", "mailMerci": "Non", "referent": "Lionel Hersan", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Chennevières-sur-Marne", "statut": "Programmé", "date": "04/06/2025", "departement": "CD94 Val de Marne", "chasubles": "Non", "kitComm": "Oui", "site": "Oui", "kakemono": "Non", "mailMerci": "Non", "referent": "Eddy Dupuis", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Valenton", "statut": "Programmé", "date": "13/06/2025", "departement": "CD94 Val de Marne", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Maisons-Alfort", "statut": "Programmé", "date": "25-juin", "departement": "CD94 Val de Marne", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}, {"commune": "Vincennes", "statut": "En discussion", "date": "23/06/2025 ou le 26/06", "departement": "CD94 Val de Marne", "chasubles": "Non", "kitComm": "Non", "site": "Non", "kakemono": "Non", "mailMerci": "Non", "referent": "", "presences": "", "tagsRS": "", "description": "", "photos": "", "autres": ""}];
+
+// ── Listen lancements ──
+listen('lancements');
+
+// ── Extend switchTab ──
+const _origSwitch = window.switchTab;
+window.switchTab = t => {
+  ['todo','relances','rdv','fm','lancements'].forEach(x => {
+    const p = document.getElementById('panel-'+x);
+    const b = document.getElementById('tab-'+x);
+    if(p) p.classList.toggle('active', x===t);
+    if(b) b.classList.toggle('active', x===t);
+  });
+};
+
+// ── Extend render for lancements ──
+const _origRender = window.render;
+window.render = () => {
+  _origRender();
+
+  const fls = document.getElementById('fl-stat').value;
+  const flq = (document.getElementById('fl-search').value||'').toLowerCase();
+
+  document.getElementById('cnt-lancements').textContent = data.lancements.length;
+  document.getElementById('s-l1').textContent = data.lancements.filter(r=>r.statut==='Réalisé').length;
+  document.getElementById('s-l2').textContent = data.lancements.filter(r=>r.statut==='Programmé').length;
+  document.getElementById('s-l3').textContent = data.lancements.filter(r=>r.statut==='En discussion').length;
+  document.getElementById('s-l4').textContent = data.lancements.filter(r=>r.statut==='À planifier').length;
+  document.getElementById('s-l5').textContent = data.lancements.length;
+
+  const bL = {
+    'Réalisé':'b-done','Programmé':'b-todo','En discussion':'b-doing',
+    'Date à confirmer':'b-confirm','À planifier':'b-noreply'
+  };
+  const check = v => {
+    if(v==='Oui') return '<span style="color:#2E7D1A;font-size:15px;">✔</span>';
+    if(v==='Non'||v==='') return '<span style="color:#ccc;font-size:15px;">—</span>';
+    if(v==='Avorté') return '<span style="color:#A32D2D;font-size:11px;font-weight:700;">Avorté</span>';
+    if(v==='/') return '<span style="color:#aaa;font-size:13px;">/</span>';
+    return '<span style="font-size:11px;color:#854F0B;">'+v+'</span>';
+  };
+
+  let ls = data.lancements;
+  if(fls) ls = ls.filter(r=>r.statut===fls);
+  if(flq) ls = ls.filter(r=>(r.commune||'').toLowerCase().includes(flq)||(r.departement||'').toLowerCase().includes(flq));
+
+  document.getElementById('tbody-lancements').innerHTML = ls.length===0
+    ? '<tr><td colspan="11" class="empty">Aucun lancement pour ce filtre</td></tr>'
+    : ls.map(r=>`<tr>
+        <td style="font-weight:700" title="${r.commune}">${r.commune}</td>
+        <td><span class="badge ${bL[r.statut]||'b-todo'}">${r.statut}</span></td>
+        <td class="secondary">${r.date||'—'}</td>
+        <td class="secondary" title="${r.departement}">${r.departement||'—'}</td>
+        <td style="text-align:center">${check(r.chasubles)}</td>
+        <td style="text-align:center">${check(r.kitComm)}</td>
+        <td style="text-align:center">${check(r.site)}</td>
+        <td style="text-align:center">${check(r.kakemono)}</td>
+        <td style="text-align:center">${check(r.mailMerci)}</td>
+        <td class="secondary" title="${r.referent}">${r.referent||'—'}</td>
+        <td><div class="actions-cell">
+          <button class="act-btn" onclick="openModal('lancements','${r._id}')">✏️</button>
+          <button class="del-btn" onclick="delRow('lancements','${r._id}')">🗑</button>
+        </div></td></tr>`).join('');
+};
+
+// ── Extend openModal for lancements ──
+const _origOpenModal = window.openModal;
+window.openModal = (type, id) => {
+  if(type !== 'lancements') { _origOpenModal(type, id); return; }
+  editCtx = {type, id};
+  const e = id ? (data.lancements.find(r=>r._id===id)||{}) : {};
+  const isEdit = !!id && !!data.lancements.find(r=>r._id===id);
+  const opts = (field) => ['Oui','Non','Avorté','/','?'].map(v=>`<option ${e[field]===v?'selected':''}>${v}</option>`).join('');
+  const statuts = ['Réalisé','Programmé','En discussion','Date à confirmer','À planifier'];
+
+  document.getElementById('modal-content').innerHTML=`
+    <div class="modal-header">
+      <div class="modal-icon">🚀</div>
+      <h2>${isEdit?'Modifier':'Ajouter'} — Lancement</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-row"><label>Commune *</label><input id="f-commune" value="${e.commune||''}" placeholder="Nom de la commune"></div>
+      <div class="form-row"><label>Département</label><input id="f-dept" value="${e.departement||''}" placeholder="ex : Val-de-Marne"></div>
+      <div class="form-row"><label>Date</label><input id="f-date" value="${e.date||''}" placeholder="ex : 15/06/26"></div>
+      <div class="form-row"><label>Statut</label><select id="f-stat">${statuts.map(s=>`<option ${e.statut===s?'selected':''}>${s}</option>`).join('')}</select></div>
+      <div class="form-row"><label>👕 Chasubles</label><select id="f-chas">${opts('chasubles')}</select></div>
+      <div class="form-row"><label>📦 Kit comm envoyé</label><select id="f-kit">${opts('kitComm')}</select></div>
+      <div class="form-row"><label>🌐 Site opérationnel</label><select id="f-site">${opts('site')}</select></div>
+      <div class="form-row"><label>🪧 Kakémono livré</label><select id="f-kak">${opts('kakemono')}</select></div>
+      <div class="form-row"><label>📧 Mail de remerciement</label><select id="f-mail">${opts('mailMerci')}</select></div>
+      <div class="form-row"><label>Référent</label><input id="f-ref" value="${e.referent||''}" placeholder="Nom du référent"></div>
+    </div>
+    <div class="form-row" style="margin-top:4px"><label>Personnes présentes</label><input id="f-pres" value="${e.presences||''}" placeholder="Noms, rôles…"></div>
+    <div class="form-row"><label>Description (2-3 phrases)</label><textarea id="f-desc">${e.description||''}</textarea></div>
+    <div class="form-row"><label>Lien photos / vidéos</label><input id="f-photos" value="${e.photos||''}" placeholder="https://…"></div>
+    <div class="form-row"><label>Autres</label><input id="f-autres" value="${e.autres||''}" placeholder="Notes complémentaires"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-save" id="btn-save-modal" onclick="saveModal('lancements')">Enregistrer</button>
+    </div>`;
+  document.getElementById('modal-bg').classList.add('open');
+};
+
+// ── Extend saveModal for lancements ──
+const _origSaveModal = window.saveModal;
+window.saveModal = async type => {
+  if(type !== 'lancements') { _origSaveModal(type); return; }
+  const btn = document.getElementById('btn-save-modal');
+  btn.disabled=true; btn.textContent='Enregistrement…';
+  const c = document.getElementById('f-commune').value.trim();
+  if(!c){btn.disabled=false;btn.textContent='Enregistrer';return;}
+  const row = {
+    commune:c, departement:document.getElementById('f-dept').value.trim(),
+    date:document.getElementById('f-date').value.trim(),
+    statut:document.getElementById('f-stat').value,
+    chasubles:document.getElementById('f-chas').value,
+    kitComm:document.getElementById('f-kit').value,
+    site:document.getElementById('f-site').value,
+    kakemono:document.getElementById('f-kak').value,
+    mailMerci:document.getElementById('f-mail').value,
+    referent:document.getElementById('f-ref').value.trim(),
+    presences:document.getElementById('f-pres').value.trim(),
+    description:document.getElementById('f-desc').value.trim(),
+    photos:document.getElementById('f-photos').value.trim(),
+    autres:document.getElementById('f-autres').value.trim()
+  };
+  try {
+    if(editCtx.id) await updateDoc(doc(db, 'lancements', editCtx.id), row);
+    else await addDoc(collection(db, 'lancements'), row);
+    closeModal();
+  } catch(err) {
+    btn.disabled=false; btn.textContent='Enregistrer';
+    alert('Erreur : '+err.message);
+  }
+};
+
+// ── Seed lancements if empty ──
+setTimeout(() => {
+  if(data.lancements.length === 0) seedIfEmpty('lancements', INIT_LANCEMENTS);
+}, 3000);
+
 </script>
 </body>
 </html>
