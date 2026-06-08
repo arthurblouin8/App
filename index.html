@@ -3,113 +3,529 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard de pilotage</title>
+<title>L'Heure Civique — Dashboard de pilotage</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
   :root {
-    --bg: #ffffff;
-    --bg2: #f5f5f3;
-    --bg3: #efefec;
-    --text: #1a1a18;
-    --text2: #6b6b65;
-    --border: rgba(0,0,0,0.12);
-    --border2: rgba(0,0,0,0.22);
-    --radius: 8px;
-    --radius-lg: 12px;
-    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --cyan:    #00AEEF;
+    --navy:    #1B2A6B;
+    --yellow:  #FFD93D;
+    --magenta: #E91E63;
+    --green:   #6FBE3F;
+    --orange:  #F77F00;
+    --violet:  #8E44AD;
+    --coral:   #E63946;
+    --white:   #ffffff;
+    --gray-bg: #F2F8FC;
+    --gray-lt: #E6F5FB;
+    --ink:     #1B2A6B;
+    --ink-soft:#4A5A8A;
+    --font: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+    --radius: 10px;
+    --radius-lg: 16px;
+    --shadow: 0 2px 12px rgba(27,42,107,0.08);
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #1c1c1a;
-      --bg2: #252523;
-      --bg3: #2e2e2b;
-      --text: #f0f0ec;
-      --text2: #9a9a92;
-      --border: rgba(255,255,255,0.1);
-      --border2: rgba(255,255,255,0.2);
-    }
+
+  body {
+    font-family: var(--font);
+    background: var(--gray-bg);
+    color: var(--navy);
+    min-height: 100vh;
   }
-  body { font-family: var(--font); background: var(--bg3); color: var(--text); min-height: 100vh; }
-  .app { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
-  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
-  .header h1 { font-size: 20px; font-weight: 600; color: var(--text); }
-  .sync-status { font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 6px; }
-  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #639922; }
-  .sync-dot.loading { background: #BA7517; animation: pulse 1s infinite; }
-  .sync-dot.error { background: #A32D2D; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-  .tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; flex-wrap: wrap; background: var(--bg2); padding: 6px; border-radius: var(--radius-lg); border: 0.5px solid var(--border); }
-  .tab { padding: 8px 16px; border-radius: var(--radius); border: none; background: transparent; cursor: pointer; font-size: 13px; color: var(--text2); font-family: var(--font); transition: all 0.15s; display: flex; align-items: center; gap: 7px; }
-  .tab:hover { background: var(--bg3); color: var(--text); }
-  .tab.active { background: var(--bg); color: var(--text); font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-  .tab .count { font-size: 11px; background: var(--bg3); border-radius: 10px; padding: 1px 7px; color: var(--text2); }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--navy);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-mark {
+    background: var(--white);
+    border-radius: 10px;
+    padding: 6px 10px;
+    line-height: 1;
+  }
+
+  .logo-mark .lheure {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--navy);
+    display: block;
+    letter-spacing: -0.3px;
+  }
+
+  .logo-mark .civique {
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    display: block;
+  }
+
+  .logo-mark .civique span:nth-child(1) { color: #00AEEF; }
+  .logo-mark .civique span:nth-child(2) { color: #E91E63; }
+  .logo-mark .civique span:nth-child(3) { color: #1B2A6B; }
+  .logo-mark .civique span:nth-child(4) { color: #6FBE3F; }
+  .logo-mark .civique span:nth-child(5) { color: #F77F00; }
+  .logo-mark .civique span:nth-child(6) { color: #FFD93D; }
+  .logo-mark .civique span:nth-child(7) { color: #8E44AD; }
+
+  .header-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .sync-status {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.65);
+  }
+
+  .sync-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    flex-shrink: 0;
+  }
+  .sync-dot.loading { background: var(--yellow); animation: pulse 1s infinite; }
+  .sync-dot.error   { background: var(--coral); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+  /* ── BODY ── */
+  .app { max-width: 1140px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    background: var(--white);
+    padding: 5px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+  }
+
+  .tab {
+    padding: 9px 18px;
+    border-radius: var(--radius);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font);
+    color: var(--ink-soft);
+    transition: all 0.18s;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+  }
+
+  .tab:hover { background: var(--gray-lt); color: var(--navy); }
+
+  .tab.active {
+    background: var(--cyan);
+    color: var(--white);
+    box-shadow: 0 2px 8px rgba(0,174,239,0.3);
+  }
+
+  .tab .count {
+    font-size: 11px;
+    font-weight: 700;
+    background: rgba(255,255,255,0.25);
+    border-radius: 10px;
+    padding: 1px 8px;
+    min-width: 22px;
+    text-align: center;
+  }
+
+  .tab:not(.active) .count {
+    background: var(--gray-bg);
+    color: var(--ink-soft);
+  }
+
+  /* ── PANEL ── */
   .panel { display: none; }
   .panel.active { display: block; }
-  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 1.25rem; }
-  .stat-card { background: var(--bg); border-radius: var(--radius); padding: 14px 18px; border: 0.5px solid var(--border); }
-  .stat-label { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
-  .stat-val { font-size: 24px; font-weight: 600; color: var(--text); }
-  .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; gap: 8px; flex-wrap: wrap; }
-  .toolbar-left { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  select { font-size: 13px; padding: 7px 12px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); color: var(--text); font-family: var(--font); cursor: pointer; }
-  .add-btn { display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); color: var(--text); font-size: 13px; font-family: var(--font); cursor: pointer; font-weight: 500; white-space: nowrap; transition: background 0.15s; }
-  .add-btn:hover { background: var(--bg2); }
-  .table-wrap { background: var(--bg); border-radius: var(--radius-lg); border: 0.5px solid var(--border); overflow: hidden; }
+
+  /* ── STATS ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+    margin-bottom: 1.25rem;
+  }
+
+  .stat-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    box-shadow: var(--shadow);
+    border-top: 3px solid var(--cyan);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    right: -10px; top: -10px;
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    background: var(--cyan);
+    opacity: 0.06;
+  }
+
+  .stat-card.accent-yellow { border-top-color: var(--yellow); }
+  .stat-card.accent-yellow::after { background: var(--yellow); }
+  .stat-card.accent-green  { border-top-color: var(--green); }
+  .stat-card.accent-green::after  { background: var(--green); }
+  .stat-card.accent-coral  { border-top-color: var(--coral); }
+  .stat-card.accent-coral::after  { background: var(--coral); }
+  .stat-card.accent-magenta{ border-top-color: var(--magenta); }
+  .stat-card.accent-magenta::after{ background: var(--magenta); }
+  .stat-card.accent-navy   { border-top-color: var(--navy); }
+  .stat-card.accent-navy::after   { background: var(--navy); }
+
+  .stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+
+  .stat-val {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--navy);
+    line-height: 1;
+  }
+
+  /* ── TOOLBAR ── */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .toolbar-left { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  select {
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font);
+    padding: 8px 14px;
+    border-radius: var(--radius);
+    border: 2px solid #E0EDF5;
+    background: var(--white);
+    color: var(--navy);
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  select:focus { border-color: var(--cyan); }
+
+  .add-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    border-radius: var(--radius);
+    border: none;
+    background: var(--cyan);
+    color: var(--white);
+    font-size: 13px;
+    font-weight: 700;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    box-shadow: 0 2px 8px rgba(0,174,239,0.3);
+    white-space: nowrap;
+  }
+  .add-btn:hover  { opacity: 0.88; }
+  .add-btn:active { transform: scale(0.98); }
+
+  /* ── TABLE ── */
+  .table-wrap {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
   table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
-  thead th { text-align: left; padding: 10px 12px; color: var(--text2); font-weight: 500; font-size: 12px; border-bottom: 0.5px solid var(--border); background: var(--bg2); }
-  tbody tr { border-bottom: 0.5px solid var(--border); }
+
+  thead th {
+    text-align: left;
+    padding: 11px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    border-bottom: 2px solid var(--gray-bg);
+    background: #FAFCFE;
+  }
+
+  tbody tr { border-bottom: 1px solid var(--gray-bg); transition: background 0.1s; }
   tbody tr:last-child { border-bottom: none; }
-  tbody tr:hover { background: var(--bg2); }
-  tbody td { padding: 10px 12px; color: var(--text); vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 500; white-space: nowrap; }
-  .b-todo { background: #E6F1FB; color: #0C447C; }
-  .b-doing { background: #FAEEDA; color: #633806; }
-  .b-done { background: #EAF3DE; color: #27500A; }
-  .b-relance { background: #FAEEDA; color: #633806; }
-  .b-relanced { background: #EAF3DE; color: #27500A; }
-  .b-noreply { background: #FCEBEB; color: #791F1F; }
-  .b-confirm { background: #FAEEDA; color: #633806; }
-  .b-confirmed { background: #EAF3DE; color: #27500A; }
-  .b-cancelled { background: #FCEBEB; color: #791F1F; }
-  .b-pending { background: #FAEEDA; color: #633806; }
-  .b-updated { background: #EAF3DE; color: #27500A; }
-  .p1 { color: #A32D2D; font-weight: 600; }
-  .p2 { color: #854F0B; }
-  .p3 { color: #3B6D11; }
-  .act-btn { padding: 5px 8px; border-radius: var(--radius); border: 0.5px solid var(--border); background: transparent; cursor: pointer; font-size: 13px; color: var(--text2); transition: all 0.15s; }
-  .act-btn:hover { background: var(--bg2); color: var(--text); }
-  .del-btn { padding: 5px 8px; border-radius: var(--radius); border: 0.5px solid var(--border); background: transparent; cursor: pointer; color: #A32D2D; font-size: 13px; }
-  .del-btn:hover { background: #FCEBEB; }
+  tbody tr:hover { background: var(--gray-lt); }
+
+  tbody td {
+    padding: 11px 14px;
+    color: var(--navy);
+    vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    letter-spacing: 0.3px;
+  }
+
+  .b-todo      { background: #E6F5FB; color: #0077AA; }
+  .b-doing     { background: #FFF8E0; color: #9A6200; }
+  .b-done      { background: #EDFAE0; color: #2E7D1A; }
+  .b-relance   { background: #FFF8E0; color: #9A6200; }
+  .b-relanced  { background: #EDFAE0; color: #2E7D1A; }
+  .b-noreply   { background: #FDE8EC; color: #A3001A; }
+  .b-confirm   { background: #FFF8E0; color: #9A6200; }
+  .b-confirmed { background: #EDFAE0; color: #2E7D1A; }
+  .b-cancelled { background: #FDE8EC; color: #A3001A; }
+  .b-pending   { background: #FFF8E0; color: #9A6200; }
+  .b-updated   { background: #EDFAE0; color: #2E7D1A; }
+
+  /* ── PRIO ── */
+  .prio-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 800;
+  }
+  .p1 { background: #FDE8EC; color: var(--coral); }
+  .p2 { background: #FFF3CC; color: #9A6200; }
+  .p3 { background: #EDFAE0; color: #2E7D1A; }
+
+  /* ── ACTION BUTTONS ── */
   .actions-cell { display: flex; gap: 4px; justify-content: flex-end; }
-  .secondary { font-size: 12px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .empty { text-align: center; padding: 3rem 1rem; color: var(--text2); font-size: 14px; }
-  .loading-row { text-align: center; padding: 2rem; color: var(--text2); font-size: 13px; }
-  /* Modal */
-  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
+
+  .act-btn {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    border: 1.5px solid #E0EDF5;
+    background: transparent;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--ink-soft);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .act-btn:hover { background: var(--cyan); border-color: var(--cyan); color: white; }
+
+  .del-btn {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    border: 1.5px solid #E0EDF5;
+    background: transparent;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--coral);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .del-btn:hover { background: var(--coral); border-color: var(--coral); color: white; }
+
+  .secondary { font-size: 12px; color: var(--ink-soft); font-weight: 500; }
+  .empty { text-align: center; padding: 3rem; color: var(--ink-soft); font-size: 13px; font-weight: 500; }
+  .loading-row { text-align: center; padding: 2rem; color: var(--ink-soft); font-size: 13px; }
+
+  /* ── MODAL ── */
+  .modal-bg {
+    display: none; position: fixed; inset: 0;
+    background: rgba(27,42,107,0.45);
+    z-index: 200;
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(2px);
+  }
   .modal-bg.open { display: flex; }
-  .modal { background: var(--bg); border-radius: var(--radius-lg); border: 0.5px solid var(--border2); padding: 1.75rem; width: 500px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
-  .modal h2 { font-size: 16px; font-weight: 600; margin-bottom: 1.25rem; color: var(--text); }
+
+  .modal {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    width: 520px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(27,42,107,0.2);
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--gray-bg);
+  }
+
+  .modal-header .modal-icon {
+    width: 36px; height: 36px;
+    background: var(--cyan);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .modal-header h2 {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--navy);
+  }
+
   .form-row { margin-bottom: 14px; }
-  .form-row label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 5px; font-weight: 500; }
-  .form-row input, .form-row select, .form-row textarea { width: 100%; font-size: 13px; padding: 8px 12px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); color: var(--text); font-family: var(--font); }
+
+  .form-row label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+  }
+
+  .form-row input,
+  .form-row select,
+  .form-row textarea {
+    width: 100%;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--font);
+    padding: 9px 14px;
+    border-radius: var(--radius);
+    border: 2px solid #E0EDF5;
+    background: var(--white);
+    color: var(--navy);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-row input:focus,
+  .form-row select:focus,
+  .form-row textarea:focus { border-color: var(--cyan); }
   .form-row textarea { resize: vertical; min-height: 70px; }
-  .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 1.5rem; }
-  .btn-cancel { padding: 8px 18px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: transparent; cursor: pointer; font-size: 13px; color: var(--text2); font-family: var(--font); }
-  .btn-save { padding: 8px 18px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--text); cursor: pointer; font-size: 13px; font-weight: 500; color: var(--bg); font-family: var(--font); transition: opacity 0.15s; }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 2px solid var(--gray-bg);
+  }
+
+  .btn-cancel {
+    padding: 9px 20px;
+    border-radius: var(--radius);
+    border: 2px solid #E0EDF5;
+    background: transparent;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: var(--font);
+    color: var(--ink-soft);
+    transition: all 0.15s;
+  }
+  .btn-cancel:hover { border-color: var(--navy); color: var(--navy); }
+
+  .btn-save {
+    padding: 9px 24px;
+    border-radius: var(--radius);
+    border: none;
+    background: var(--cyan);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: var(--font);
+    color: var(--white);
+    box-shadow: 0 2px 8px rgba(0,174,239,0.3);
+    transition: opacity 0.15s;
+  }
   .btn-save:hover { opacity: 0.85; }
-  .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-save:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* ── YELLOW ACCENT BAR ── */
+  .section-kicker {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--navy);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 3px 10px;
+    background: var(--yellow);
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 1rem;
+  }
 </style>
 </head>
 <body>
-<div class="app">
-  <div class="header">
-    <h1>🗂 Dashboard de pilotage</h1>
-    <div class="sync-status">
-      <div class="sync-dot loading" id="sync-dot"></div>
-      <span id="sync-label">Connexion…</span>
-    </div>
-  </div>
 
+<!-- HEADER -->
+<div class="header">
+  <div class="logo">
+    <img src="data:image/png;base64,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ZccnmAB7y/GptNW6/Rg1LDHUMGGTx4DgPA+I9B95dpFCta0a9J0qkU49DxV1WVV1lJ8T3yUrqzTVZp+dgleJ6aX6XM1uOf3JHcVxYTGJWGZjnxhw42tdwkjvAPcVfdyoaW40UlHWQtlhkGHNPwjwKrW+bf3SnmLrUW1sBPmtc8MkaPTnAPrB9xfN9b7L1rap3tnFyh05tfLxX18zsNM1ynWh3dxLEuvJP8M88WuaK209LR2S0ugpY3gyiQjicO8DB7T4kqeTQ2zUVjMdRDFWUFZGCWPGQ5p+Aj9IIVaUOgL/ADyAVDYKRne58gcR6g3Of0hWZYLXT2a1xUFMXuYzJLnHm5x5k+jn3LouzVXVXOXrUOGGFjbhw14JbbGm1mFioruJZl475z8WVxctj7DNNx0F2uFGwknq3BsgA8ASAcesldvRe1untN17LiX1FxrYjmKSoxwxHxa0DGfSc47sKdou2leV5R4XLY5tW9JPKRBtwdsrLrW7w3O511xglhgEDW072BuA5zsniaTnzj39yjfzgdJ/fW+frYv3at1F4KclsmUq2jWNebqVKabfNlRfOB0n99b5+ti/drr6O2g09pfUlLfaG4XWWopePgZNJGWHiY5hzhgPY496sZFl1JPxI09EsKc1OFJJrdfFBERQNqEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREB//Z" alt="L'heure Civique" style="height:44px;width:auto;border-radius:8px;background:white;padding:4px 6px;">
+    <span class="header-title">Dashboard de pilotage</span>
+  </div>
+  <div class="sync-status">
+    <div class="sync-dot loading" id="sync-dot"></div>
+    <span id="sync-label">Connexion…</span>
+  </div>
+</div>
+
+<div class="app">
+
+  <!-- TABS -->
   <div class="tabs">
     <button class="tab active" onclick="switchTab('todo')" id="tab-todo">✅ To-do <span class="count" id="cnt-todo">—</span></button>
     <button class="tab" onclick="switchTab('relances')" id="tab-relances">🔔 Relances <span class="count" id="cnt-relances">—</span></button>
@@ -119,22 +535,23 @@
 
   <!-- TO-DO -->
   <div id="panel-todo" class="panel active">
+    <div class="section-kicker">To-do liste</div>
     <div class="stats-row">
-      <div class="stat-card"><div class="stat-label">À faire</div><div class="stat-val" id="s-t1">—</div></div>
-      <div class="stat-card"><div class="stat-label">En cours</div><div class="stat-val" id="s-t2">—</div></div>
-      <div class="stat-card"><div class="stat-label">Fait</div><div class="stat-val" id="s-t3">—</div></div>
+      <div class="stat-card accent-coral"><div class="stat-label">À faire</div><div class="stat-val" id="s-t1">—</div></div>
+      <div class="stat-card accent-yellow"><div class="stat-label">En cours</div><div class="stat-val" id="s-t2">—</div></div>
+      <div class="stat-card accent-green"><div class="stat-label">Fait</div><div class="stat-val" id="s-t3">—</div></div>
     </div>
     <div class="toolbar">
       <div class="toolbar-left">
         <select id="ft-stat" onchange="render()"><option value="">Tous les statuts</option><option>À faire</option><option>En cours</option><option>Fait</option></select>
         <select id="ft-prio" onchange="render()"><option value="">Toutes priorités</option><option>1 — Haute</option><option>2 — Moyenne</option><option>3 — Basse</option></select>
       </div>
-      <button class="add-btn" onclick="openModal('todo',null)">+ Ajouter</button>
+      <button class="add-btn" onclick="openModal('todo',null)">+ Ajouter une tâche</button>
     </div>
     <div class="table-wrap"><table>
       <thead><tr>
-        <th style="width:36%">Tâche</th><th style="width:9%">Prio</th><th style="width:13%">Statut</th>
-        <th style="width:13%">Échéance</th><th style="width:20%">Infos / Responsable</th><th style="width:9%"></th>
+        <th style="width:28%">Tâche</th><th style="width:7%">Prio</th><th style="width:11%">Statut</th>
+        <th style="width:13%">Échéance</th><th style="width:14%">Responsable</th><th style="width:18%">Infos</th><th style="width:9%"></th>
       </tr></thead>
       <tbody id="tbody-todo"><tr><td colspan="6" class="loading-row">Chargement…</td></tr></tbody>
     </table></div>
@@ -142,22 +559,23 @@
 
   <!-- RELANCES -->
   <div id="panel-relances" class="panel">
+    <div class="section-kicker">Relances à faire</div>
     <div class="stats-row">
-      <div class="stat-card"><div class="stat-label">À relancer</div><div class="stat-val" id="s-rl1">—</div></div>
-      <div class="stat-card"><div class="stat-label">Relancé</div><div class="stat-val" id="s-rl2">—</div></div>
-      <div class="stat-card"><div class="stat-label">Sans réponse</div><div class="stat-val" id="s-rl3">—</div></div>
+      <div class="stat-card accent-coral"><div class="stat-label">À relancer</div><div class="stat-val" id="s-rl1">—</div></div>
+      <div class="stat-card accent-green"><div class="stat-label">Relancé</div><div class="stat-val" id="s-rl2">—</div></div>
+      <div class="stat-card accent-navy"><div class="stat-label">Sans réponse</div><div class="stat-val" id="s-rl3">—</div></div>
     </div>
     <div class="toolbar">
       <div class="toolbar-left">
         <select id="frl-stat" onchange="render()"><option value="">Tous les statuts</option><option>À relancer</option><option>Relancé</option><option>Sans réponse</option></select>
         <select id="frl-canal" onchange="render()"><option value="">Tous les canaux</option><option>Mail</option><option>Téléphone</option><option>SMS</option><option>LinkedIn</option><option>Autre</option></select>
       </div>
-      <button class="add-btn" onclick="openModal('relances',null)">+ Ajouter</button>
+      <button class="add-btn" onclick="openModal('relances',null)">+ Ajouter une relance</button>
     </div>
     <div class="table-wrap"><table>
       <thead><tr>
-        <th style="width:18%">Contact</th><th style="width:22%">Objet</th><th style="width:11%">Canal</th>
-        <th style="width:13%">Échéance</th><th style="width:22%">Infos</th><th style="width:10%">Statut</th><th style="width:4%"></th>
+        <th style="width:17%">Contact</th><th style="width:22%">Objet</th><th style="width:11%">Canal</th>
+        <th style="width:13%">Échéance</th><th style="width:22%">Infos</th><th style="width:11%">Statut</th><th style="width:4%"></th>
       </tr></thead>
       <tbody id="tbody-relances"><tr><td colspan="7" class="loading-row">Chargement…</td></tr></tbody>
     </table></div>
@@ -165,21 +583,23 @@
 
   <!-- RDV -->
   <div id="panel-rdv" class="panel">
+    <div class="section-kicker">RDV à caler</div>
     <div class="stats-row">
-      <div class="stat-card"><div class="stat-label">À confirmer</div><div class="stat-val" id="s-r1">—</div></div>
-      <div class="stat-card"><div class="stat-label">Confirmé</div><div class="stat-val" id="s-r2">—</div></div>
-      <div class="stat-card"><div class="stat-label">Annulé</div><div class="stat-val" id="s-r3">—</div></div>
+      <div class="stat-card accent-yellow"><div class="stat-label">À confirmer</div><div class="stat-val" id="s-r1">—</div></div>
+      <div class="stat-card accent-green"><div class="stat-label">Confirmé</div><div class="stat-val" id="s-r2">—</div></div>
+      <div class="stat-card accent-coral"><div class="stat-label">Annulé</div><div class="stat-val" id="s-r3">—</div></div>
     </div>
     <div class="toolbar">
       <div class="toolbar-left">
         <select id="fr-stat" onchange="render()"><option value="">Tous les statuts</option><option>À confirmer</option><option>Confirmé</option><option>Annulé</option></select>
       </div>
-      <button class="add-btn" onclick="openModal('rdv',null)">+ Ajouter</button>
+      <button class="add-btn" onclick="openModal('rdv',null)">+ Ajouter un RDV</button>
     </div>
     <div class="table-wrap"><table>
       <thead><tr>
-        <th style="width:18%">Contact</th><th style="width:22%">Objet</th><th style="width:15%">Date souhaitée</th>
-        <th style="width:22%">Personnes conviées</th><th style="width:13%">Statut</th><th style="width:10%"></th>
+        <th style="width:18%">Contact</th><th style="width:22%">Objet</th>
+        <th style="width:15%">Date souhaitée</th><th style="width:22%">Personnes conviées</th>
+        <th style="width:13%">Statut</th><th style="width:10%"></th>
       </tr></thead>
       <tbody id="tbody-rdv"><tr><td colspan="6" class="loading-row">Chargement…</td></tr></tbody>
     </table></div>
@@ -187,15 +607,16 @@
 
   <!-- FILEMAKER -->
   <div id="panel-fm" class="panel">
+    <div class="section-kicker">FileMaker — mises à jour</div>
     <div class="stats-row">
-      <div class="stat-card"><div class="stat-label">En attente</div><div class="stat-val" id="s-f1">—</div></div>
-      <div class="stat-card"><div class="stat-label">Mis à jour</div><div class="stat-val" id="s-f2">—</div></div>
+      <div class="stat-card accent-yellow"><div class="stat-label">En attente</div><div class="stat-val" id="s-f1">—</div></div>
+      <div class="stat-card accent-green"><div class="stat-label">Mis à jour</div><div class="stat-val" id="s-f2">—</div></div>
     </div>
     <div class="toolbar">
       <div class="toolbar-left">
         <select id="ff-stat" onchange="render()"><option value="">Tous les statuts</option><option>En attente</option><option>Mis à jour</option></select>
       </div>
-      <button class="add-btn" onclick="openModal('fm',null)">+ Ajouter</button>
+      <button class="add-btn" onclick="openModal('fm',null)">+ Ajouter une entrée</button>
     </div>
     <div class="table-wrap"><table>
       <thead><tr>
@@ -205,15 +626,17 @@
       <tbody id="tbody-fm"><tr><td colspan="5" class="loading-row">Chargement…</td></tr></tbody>
     </table></div>
   </div>
-</div>
 
+</div><!-- .app -->
+
+<!-- MODAL -->
 <div class="modal-bg" id="modal-bg">
   <div class="modal" id="modal-content"></div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCpJl9NyQhAwraXtbc9C9aX815UPz1Kx3Y",
@@ -225,29 +648,18 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const db  = getFirestore(app);
+const COLS = { todo:'todo', relances:'relances', rdv:'rdv', fm:'fm' };
 
-// Collections
-const COLS = { todo: 'todo', relances: 'relances', rdv: 'rdv', fm: 'fm' };
-let data = { todo: [], relances: [], rdv: [], fm: [] };
+let data   = { todo:[], relances:[], rdv:[], fm:[] };
+let loaded = { todo:false, relances:false, rdv:false, fm:false };
 let editCtx = null;
-let loaded = { todo: false, relances: false, rdv: false, fm: false };
 
-// Sync status
-function setSync(state) {
+function setSync(s) {
   const dot = document.getElementById('sync-dot');
   const lbl = document.getElementById('sync-label');
-  dot.className = 'sync-dot' + (state === 'ok' ? '' : state === 'loading' ? ' loading' : ' error');
-  lbl.textContent = state === 'ok' ? 'Synchronisé' : state === 'loading' ? 'Connexion…' : 'Erreur de sync';
-}
-
-// Seed initial data if empty
-async function seedIfEmpty(col, items) {
-  if (data[col].length === 0) {
-    for (const item of items) {
-      await addDoc(collection(db, COLS[col]), item);
-    }
-  }
+  dot.className = 'sync-dot' + (s==='ok'?'':s==='loading'?' loading':' error');
+  lbl.textContent = s==='ok'?'Synchronisé':s==='loading'?'Connexion…':'Erreur de sync';
 }
 
 const INIT_TODO = [
@@ -313,6 +725,7 @@ const INIT_TODO = [
   {sujet:"Ranger mes docs",prio:"3 — Basse",statut:"Fait",echeance:"06/06/26",responsable:"",infos:""},
   {sujet:"Prendre en main les RP",prio:"3 — Basse",statut:"Fait",echeance:"06/06/26",responsable:"",infos:""},
 ];
+
 const INIT_RELANCES = [
   {contact:"V. Dusit",objet:"Ass Martranchard dsg Savoie",canal:"Téléphone",echeance:"",statut:"À relancer",infos:"10 min"},
   {contact:"TROADEC",objet:"Monter réunion visio 15/20 min",canal:"Mail",echeance:"",statut:"À relancer",infos:""},
@@ -321,9 +734,10 @@ const INIT_RELANCES = [
   {contact:"RDV Savoie + Manche",objet:"1 Dir Autonomie, cab PcD",canal:"Mail",echeance:"06/06/26",statut:"À relancer",infos:""},
   {contact:"Fête des voisins",objet:"Relance organisation",canal:"Mail",echeance:"06/06/26",statut:"À relancer",infos:""},
 ];
+
 const INIT_RDV = [
   {contact:"Maelig",objet:"RDV à caler",date:"",convies:"",statut:"À confirmer"},
-  {contact:"Carolane / Président Savoie",objet:"RDV 10 min quand il est à Paris",date:"",convies:"Atanase, Maire du 17",statut:"À confirmer"},
+  {contact:"Carolane / Président Savoie",objet:"RDV 10 min à Paris",date:"",convies:"Atanase, Maire du 17",statut:"À confirmer"},
   {contact:"V. Dusit",objet:"RDV 10 min — Savoie",date:"",convies:"",statut:"À confirmer"},
   {contact:"TROADEC",objet:"Visio 15/20 min",date:"",convies:"",statut:"À confirmer"},
   {contact:"Natalie Perreira",objet:"RDV Chambéry",date:"",convies:"",statut:"À confirmer"},
@@ -332,87 +746,87 @@ const INIT_RDV = [
   {contact:"ESCP",objet:"Planifier réunion",date:"",convies:"",statut:"À confirmer"},
 ];
 
-// Real-time listeners
-function listen(col) {
-  onSnapshot(collection(db, COLS[col]), (snap) => {
-    data[col] = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
-    loaded[col] = true;
-    // Seed if first load and empty
-    if (data[col].length === 0) {
-      const seeds = { todo: INIT_TODO, relances: INIT_RELANCES, rdv: INIT_RDV, fm: [] };
-      if (seeds[col].length > 0) seedIfEmpty(col, seeds[col]);
-    }
-    render();
-    if (Object.values(loaded).every(Boolean)) setSync('ok');
-  }, () => setSync('error'));
+async function seedIfEmpty(col, items) {
+  if(data[col].length === 0 && items.length > 0) {
+    for(const item of items) await addDoc(collection(db, COLS[col]), item);
+  }
 }
 
+function listen(col) {
+  onSnapshot(collection(db, COLS[col]), snap => {
+    data[col] = snap.docs.map(d => ({_id: d.id, ...d.data()}));
+    loaded[col] = true;
+    const seeds = {todo:INIT_TODO, relances:INIT_RELANCES, rdv:INIT_RDV, fm:[]};
+    if(data[col].length === 0) seedIfEmpty(col, seeds[col]);
+    render();
+    if(Object.values(loaded).every(Boolean)) setSync('ok');
+  }, () => setSync('error'));
+}
 ['todo','relances','rdv','fm'].forEach(listen);
 
-// Tab switching
-window.switchTab = function(t) {
+window.switchTab = t => {
   ['todo','relances','rdv','fm'].forEach(x => {
     document.getElementById('panel-'+x).classList.toggle('active', x===t);
     document.getElementById('tab-'+x).classList.toggle('active', x===t);
   });
 };
 
-// Badge helpers
 const bMap = {
-  todo: {'À faire':'b-todo','En cours':'b-doing','Fait':'b-done'},
+  todo:     {'À faire':'b-todo','En cours':'b-doing','Fait':'b-done'},
   relances: {'À relancer':'b-relance','Relancé':'b-relanced','Sans réponse':'b-noreply'},
-  rdv: {'À confirmer':'b-confirm','Confirmé':'b-confirmed','Annulé':'b-cancelled'},
-  fm: {'En attente':'b-pending','Mis à jour':'b-updated'}
+  rdv:      {'À confirmer':'b-confirm','Confirmé':'b-confirmed','Annulé':'b-cancelled'},
+  fm:       {'En attente':'b-pending','Mis à jour':'b-updated'}
 };
 const badge = (s, col) => `<span class="badge ${bMap[col][s]||''}">${s}</span>`;
 const pc = p => p&&p.startsWith('1')?'p1':p&&p.startsWith('2')?'p2':'p3';
+const prioNum = p => (p||'').charAt(0);
 
-window.render = function() {
+window.render = () => {
   const fs=document.getElementById('ft-stat').value, fp=document.getElementById('ft-prio').value;
   const frl=document.getElementById('frl-stat').value, frlc=document.getElementById('frl-canal').value;
   const fr=document.getElementById('fr-stat').value, ff=document.getElementById('ff-stat').value;
 
-  document.getElementById('cnt-todo').textContent = data.todo.length;
+  document.getElementById('cnt-todo').textContent     = data.todo.length;
   document.getElementById('cnt-relances').textContent = data.relances.length;
-  document.getElementById('cnt-rdv').textContent = data.rdv.length;
-  document.getElementById('cnt-fm').textContent = data.fm.length;
-  document.getElementById('s-t1').textContent = data.todo.filter(r=>r.statut==='À faire').length;
-  document.getElementById('s-t2').textContent = data.todo.filter(r=>r.statut==='En cours').length;
-  document.getElementById('s-t3').textContent = data.todo.filter(r=>r.statut==='Fait').length;
+  document.getElementById('cnt-rdv').textContent      = data.rdv.length;
+  document.getElementById('cnt-fm').textContent       = data.fm.length;
+
+  document.getElementById('s-t1').textContent  = data.todo.filter(r=>r.statut==='À faire').length;
+  document.getElementById('s-t2').textContent  = data.todo.filter(r=>r.statut==='En cours').length;
+  document.getElementById('s-t3').textContent  = data.todo.filter(r=>r.statut==='Fait').length;
   document.getElementById('s-rl1').textContent = data.relances.filter(r=>r.statut==='À relancer').length;
   document.getElementById('s-rl2').textContent = data.relances.filter(r=>r.statut==='Relancé').length;
   document.getElementById('s-rl3').textContent = data.relances.filter(r=>r.statut==='Sans réponse').length;
-  document.getElementById('s-r1').textContent = data.rdv.filter(r=>r.statut==='À confirmer').length;
-  document.getElementById('s-r2').textContent = data.rdv.filter(r=>r.statut==='Confirmé').length;
-  document.getElementById('s-r3').textContent = data.rdv.filter(r=>r.statut==='Annulé').length;
-  document.getElementById('s-f1').textContent = data.fm.filter(r=>r.statut==='En attente').length;
-  document.getElementById('s-f2').textContent = data.fm.filter(r=>r.statut==='Mis à jour').length;
+  document.getElementById('s-r1').textContent  = data.rdv.filter(r=>r.statut==='À confirmer').length;
+  document.getElementById('s-r2').textContent  = data.rdv.filter(r=>r.statut==='Confirmé').length;
+  document.getElementById('s-r3').textContent  = data.rdv.filter(r=>r.statut==='Annulé').length;
+  document.getElementById('s-f1').textContent  = data.fm.filter(r=>r.statut==='En attente').length;
+  document.getElementById('s-f2').textContent  = data.fm.filter(r=>r.statut==='Mis à jour').length;
 
-  // TODO
   let todos = data.todo;
   if(fs) todos=todos.filter(r=>r.statut===fs);
   if(fp) todos=todos.filter(r=>r.prio===fp);
   document.getElementById('tbody-todo').innerHTML = todos.length===0
-    ? `<tr><td colspan="6" class="empty">Aucune tâche</td></tr>`
+    ? `<tr><td colspan="6" class="empty">Aucune tâche pour ce filtre</td></tr>`
     : todos.map(r=>`<tr>
-        <td title="${r.sujet||''}">${r.sujet||''}</td>
-        <td><span class="${pc(r.prio)}">${(r.prio||'').charAt(0)}</span></td>
+        <td title="${r.sujet||''}" style="font-weight:600">${r.sujet||''}</td>
+        <td><span class="prio-pill ${pc(r.prio)}">${prioNum(r.prio)}</span></td>
         <td>${badge(r.statut,'todo')}</td>
         <td class="secondary">${r.echeance||'—'}</td>
-        <td class="secondary" title="${r.infos||r.responsable||''}">${r.infos||r.responsable||'—'}</td>
+        <td class="secondary" title="${r.responsable||''}">${r.responsable||'—'}</td>
+        <td class="secondary" title="${r.infos||''}">${r.infos||'—'}</td>
         <td><div class="actions-cell">
           <button class="act-btn" onclick="openModal('todo','${r._id}')">✏️</button>
           <button class="del-btn" onclick="delRow('todo','${r._id}')">🗑</button>
         </div></td></tr>`).join('');
 
-  // RELANCES
   let rls = data.relances;
   if(frl) rls=rls.filter(r=>r.statut===frl);
   if(frlc) rls=rls.filter(r=>r.canal===frlc);
   document.getElementById('tbody-relances').innerHTML = rls.length===0
-    ? `<tr><td colspan="7" class="empty">Aucune relance</td></tr>`
+    ? `<tr><td colspan="7" class="empty">Aucune relance pour ce filtre</td></tr>`
     : rls.map(r=>`<tr>
-        <td title="${r.contact||''}">${r.contact||''}</td>
+        <td style="font-weight:600" title="${r.contact||''}">${r.contact||''}</td>
         <td title="${r.objet||''}">${r.objet||''}</td>
         <td class="secondary">${r.canal||''}</td>
         <td class="secondary">${r.echeance||'—'}</td>
@@ -423,12 +837,11 @@ window.render = function() {
           <button class="del-btn" onclick="delRow('relances','${r._id}')">🗑</button>
         </div></td></tr>`).join('');
 
-  // RDV
   let rdvs = fr ? data.rdv.filter(r=>r.statut===fr) : data.rdv;
   document.getElementById('tbody-rdv').innerHTML = rdvs.length===0
-    ? `<tr><td colspan="6" class="empty">Aucun RDV</td></tr>`
+    ? `<tr><td colspan="6" class="empty">Aucun RDV pour ce filtre</td></tr>`
     : rdvs.map(r=>`<tr>
-        <td title="${r.contact||''}">${r.contact||''}</td>
+        <td style="font-weight:600" title="${r.contact||''}">${r.contact||''}</td>
         <td title="${r.objet||''}">${r.objet||''}</td>
         <td class="secondary">${r.date||'—'}</td>
         <td class="secondary" title="${r.convies||''}">${r.convies||'—'}</td>
@@ -438,12 +851,11 @@ window.render = function() {
           <button class="del-btn" onclick="delRow('rdv','${r._id}')">🗑</button>
         </div></td></tr>`).join('');
 
-  // FILEMAKER
   let fms = ff ? data.fm.filter(r=>r.statut===ff) : data.fm;
   document.getElementById('tbody-fm').innerHTML = fms.length===0
-    ? `<tr><td colspan="5" class="empty">Aucune entrée</td></tr>`
+    ? `<tr><td colspan="5" class="empty">Aucune entrée FileMaker</td></tr>`
     : fms.map(r=>`<tr>
-        <td title="${r.nom||''}">${r.nom||''}</td>
+        <td style="font-weight:600" title="${r.nom||''}">${r.nom||''}</td>
         <td title="${r.entreprise||''}">${r.entreprise||'—'}</td>
         <td title="${r.champ||''}">${r.champ||''}</td>
         <td>${badge(r.statut,'fm')}</td>
@@ -453,22 +865,23 @@ window.render = function() {
         </div></td></tr>`).join('');
 };
 
-window.delRow = async function(col, id) {
+window.delRow = async (col, id) => {
   if(!confirm('Supprimer cette entrée ?')) return;
   await deleteDoc(doc(db, COLS[col], id));
 };
 
-window.openModal = function(type, id) {
-  editCtx = { type, id };
-  const existing = id ? data[type].find(r=>r._id===id) : null;
-  const e = existing || {};
-  const isEdit = !!existing;
-  const titles = {todo:'Tâche',relances:'Relance',rdv:'RDV',fm:'Entrée FileMaker'};
+const ICONS = {todo:'✅', relances:'🔔', rdv:'📅', fm:'🗄'};
+const TITLES = {todo:'Tâche', relances:'Relance', rdv:'RDV', fm:'Entrée FileMaker'};
+
+window.openModal = (type, id) => {
+  editCtx = {type, id};
+  const e = id ? (data[type].find(r=>r._id===id)||{}) : {};
+  const isEdit = !!id && !!data[type].find(r=>r._id===id);
   let fields = '';
 
   if(type==='todo') {
     fields=`
-      <div class="form-row"><label>Tâche *</label><input id="f-sujet" value="${e.sujet||''}"></div>
+      <div class="form-row"><label>Tâche *</label><input id="f-sujet" value="${e.sujet||''}" placeholder="Description de la tâche"></div>
       <div class="form-row"><label>Priorité</label><select id="f-prio">
         <option ${!e.prio||e.prio.startsWith('1')?'selected':''}>1 — Haute</option>
         <option ${e.prio&&e.prio.startsWith('2')?'selected':''}>2 — Moyenne</option>
@@ -479,17 +892,17 @@ window.openModal = function(type, id) {
         <option ${e.statut==='En cours'?'selected':''}>En cours</option>
         <option ${e.statut==='Fait'?'selected':''}>Fait</option>
       </select></div>
-      <div class="form-row"><label>Échéance</label><input id="f-ech" value="${e.echeance||''}" placeholder="ex: 15/06/26"></div>
-      <div class="form-row"><label>Responsable</label><input id="f-resp" value="${e.responsable||''}"></div>
-      <div class="form-row"><label>Infos</label><textarea id="f-infos">${e.infos||''}</textarea></div>`;
+      <div class="form-row"><label>Échéance</label><input id="f-ech" value="${e.echeance||''}" placeholder="ex : 15/06/26"></div>
+      <div class="form-row"><label>Responsable</label><input id="f-resp" value="${e.responsable||''}" placeholder="Nom"></div>
+      <div class="form-row"><label>Infos complémentaires</label><textarea id="f-infos">${e.infos||''}</textarea></div>`;
   } else if(type==='relances') {
     fields=`
-      <div class="form-row"><label>Contact *</label><input id="f-contact" value="${e.contact||''}"></div>
-      <div class="form-row"><label>Objet *</label><input id="f-objet" value="${e.objet||''}"></div>
+      <div class="form-row"><label>Contact *</label><input id="f-contact" value="${e.contact||''}" placeholder="Prénom Nom"></div>
+      <div class="form-row"><label>Objet *</label><input id="f-objet" value="${e.objet||''}" placeholder="Objet de la relance"></div>
       <div class="form-row"><label>Canal</label><select id="f-canal">
         ${['Mail','Téléphone','SMS','LinkedIn','Autre'].map(c=>`<option ${e.canal===c?'selected':''}>${c}</option>`).join('')}
       </select></div>
-      <div class="form-row"><label>Échéance</label><input id="f-ech" value="${e.echeance||''}" placeholder="ex: 15/06/26"></div>
+      <div class="form-row"><label>Échéance</label><input id="f-ech" value="${e.echeance||''}" placeholder="ex : 15/06/26"></div>
       <div class="form-row"><label>Statut</label><select id="f-stat">
         <option ${!e.statut||e.statut==='À relancer'?'selected':''}>À relancer</option>
         <option ${e.statut==='Relancé'?'selected':''}>Relancé</option>
@@ -498,10 +911,10 @@ window.openModal = function(type, id) {
       <div class="form-row"><label>Infos</label><textarea id="f-infos">${e.infos||''}</textarea></div>`;
   } else if(type==='rdv') {
     fields=`
-      <div class="form-row"><label>Contact *</label><input id="f-contact" value="${e.contact||''}"></div>
-      <div class="form-row"><label>Objet *</label><input id="f-objet" value="${e.objet||''}"></div>
-      <div class="form-row"><label>Date souhaitée</label><input id="f-date" value="${e.date||''}" placeholder="ex: 15/06/26"></div>
-      <div class="form-row"><label>Personnes conviées</label><input id="f-conv" value="${e.convies||''}"></div>
+      <div class="form-row"><label>Contact *</label><input id="f-contact" value="${e.contact||''}" placeholder="Prénom Nom"></div>
+      <div class="form-row"><label>Objet *</label><input id="f-objet" value="${e.objet||''}" placeholder="Sujet du RDV"></div>
+      <div class="form-row"><label>Date souhaitée</label><input id="f-date" value="${e.date||''}" placeholder="ex : 15/06/26"></div>
+      <div class="form-row"><label>Personnes conviées</label><input id="f-conv" value="${e.convies||''}" placeholder="Noms / rôles"></div>
       <div class="form-row"><label>Statut</label><select id="f-stat">
         <option ${!e.statut||e.statut==='À confirmer'?'selected':''}>À confirmer</option>
         <option ${e.statut==='Confirmé'?'selected':''}>Confirmé</option>
@@ -509,16 +922,21 @@ window.openModal = function(type, id) {
       </select></div>`;
   } else {
     fields=`
-      <div class="form-row"><label>Nom contact *</label><input id="f-nom" value="${e.nom||''}"></div>
-      <div class="form-row"><label>Entreprise</label><input id="f-ent" value="${e.entreprise||''}"></div>
-      <div class="form-row"><label>Champ à modifier *</label><input id="f-champ" value="${e.champ||''}"></div>
+      <div class="form-row"><label>Nom contact *</label><input id="f-nom" value="${e.nom||''}" placeholder="Prénom Nom"></div>
+      <div class="form-row"><label>Entreprise</label><input id="f-ent" value="${e.entreprise||''}" placeholder="Nom entreprise / collectivité"></div>
+      <div class="form-row"><label>Champ à modifier *</label><input id="f-champ" value="${e.champ||''}" placeholder="ex : Téléphone, Statut, Adresse…"></div>
       <div class="form-row"><label>Statut</label><select id="f-stat">
         <option ${!e.statut||e.statut==='En attente'?'selected':''}>En attente</option>
         <option ${e.statut==='Mis à jour'?'selected':''}>Mis à jour</option>
       </select></div>`;
   }
 
-  document.getElementById('modal-content').innerHTML=`<h2>${isEdit?'Modifier':'Ajouter'} — ${titles[type]}</h2>${fields}
+  document.getElementById('modal-content').innerHTML=`
+    <div class="modal-header">
+      <div class="modal-icon">${ICONS[type]}</div>
+      <h2>${isEdit?'Modifier':'Ajouter'} — ${TITLES[type]}</h2>
+    </div>
+    ${fields}
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">Annuler</button>
       <button class="btn-save" id="btn-save-modal" onclick="saveModal('${type}')">Enregistrer</button>
@@ -526,14 +944,14 @@ window.openModal = function(type, id) {
   document.getElementById('modal-bg').classList.add('open');
 };
 
-window.closeModal = function() {
+window.closeModal = () => {
   document.getElementById('modal-bg').classList.remove('open');
   editCtx = null;
 };
 
-window.saveModal = async function(type) {
+window.saveModal = async type => {
   const btn = document.getElementById('btn-save-modal');
-  btn.disabled = true; btn.textContent = 'Enregistrement…';
+  btn.disabled=true; btn.textContent='Enregistrement…';
   let row;
   try {
     if(type==='todo') {
@@ -554,7 +972,7 @@ window.saveModal = async function(type) {
     closeModal();
   } catch(err) {
     btn.disabled=false; btn.textContent='Enregistrer';
-    alert('Erreur : ' + err.message);
+    alert('Erreur : '+err.message);
   }
 };
 
