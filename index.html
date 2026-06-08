@@ -574,8 +574,8 @@
     </div>
     <div class="table-wrap"><table>
       <thead><tr>
-        <th style="width:17%">Contact</th><th style="width:22%">Objet</th><th style="width:11%">Canal</th>
-        <th style="width:13%">Échéance</th><th style="width:22%">Infos</th><th style="width:11%">Statut</th><th style="width:4%"></th>
+        <th style="width:15%">Contact</th><th style="width:18%">Objet</th><th style="width:9%">Canal</th>
+        <th style="width:11%">Échéance</th><th style="width:17%">Infos</th><th style="width:10%">Statut</th><th style="width:12%">Mail réf.</th><th style="width:8%"></th>
       </tr></thead>
       <tbody id="tbody-relances"><tr><td colspan="7" class="loading-row">Chargement…</td></tr></tbody>
     </table></div>
@@ -597,9 +597,9 @@
     </div>
     <div class="table-wrap"><table>
       <thead><tr>
-        <th style="width:18%">Contact</th><th style="width:22%">Objet</th>
-        <th style="width:15%">Date souhaitée</th><th style="width:22%">Personnes conviées</th>
-        <th style="width:13%">Statut</th><th style="width:10%"></th>
+        <th style="width:15%">Contact</th><th style="width:18%">Objet</th>
+        <th style="width:12%">Date souhaitée</th><th style="width:18%">Personnes conviées</th>
+        <th style="width:11%">Statut</th><th style="width:12%">Mail réf.</th><th style="width:14%"></th>
       </tr></thead>
       <tbody id="tbody-rdv"><tr><td colspan="6" class="loading-row">Chargement…</td></tr></tbody>
     </table></div>
@@ -620,8 +620,8 @@
     </div>
     <div class="table-wrap"><table>
       <thead><tr>
-        <th style="width:24%">Nom contact</th><th style="width:24%">Entreprise</th>
-        <th style="width:30%">Champ à modifier</th><th style="width:14%">Statut</th><th style="width:8%"></th>
+        <th style="width:20%">Nom contact</th><th style="width:20%">Entreprise</th>
+        <th style="width:24%">Champ à modifier</th><th style="width:12%">Statut</th><th style="width:12%">Mail réf.</th><th style="width:12%"></th>
       </tr></thead>
       <tbody id="tbody-fm"><tr><td colspan="5" class="loading-row">Chargement…</td></tr></tbody>
     </table></div>
@@ -832,6 +832,7 @@ window.render = () => {
         <td class="secondary">${r.echeance||'—'}</td>
         <td class="secondary" title="${r.infos||''}">${r.infos||'—'}</td>
         <td>${badge(r.statut,'relances')}</td>
+        <td>${r.mailRef ? `<a href="${r.mailRef}" target="_blank" style="color:var(--cyan);font-size:12px;font-weight:600;text-decoration:none;" title="${r.mailRef}">📧 Voir</a>` : '<span class="secondary">—</span>'}</td>
         <td><div class="actions-cell">
           <button class="act-btn" onclick="openModal('relances','${r._id}')">✏️</button>
           <button class="del-btn" onclick="delRow('relances','${r._id}')">🗑</button>
@@ -846,6 +847,7 @@ window.render = () => {
         <td class="secondary">${r.date||'—'}</td>
         <td class="secondary" title="${r.convies||''}">${r.convies||'—'}</td>
         <td>${badge(r.statut,'rdv')}</td>
+        <td>${r.mailRef ? `<a href="${r.mailRef}" target="_blank" style="color:var(--cyan);font-size:12px;font-weight:600;text-decoration:none;" title="${r.mailRef}">📧 Voir</a>` : '<span class="secondary">—</span>'}</td>
         <td><div class="actions-cell">
           <button class="act-btn" onclick="openModal('rdv','${r._id}')">✏️</button>
           <button class="del-btn" onclick="delRow('rdv','${r._id}')">🗑</button>
@@ -859,6 +861,7 @@ window.render = () => {
         <td title="${r.entreprise||''}">${r.entreprise||'—'}</td>
         <td title="${r.champ||''}">${r.champ||''}</td>
         <td>${badge(r.statut,'fm')}</td>
+        <td>${r.mailRef ? `<a href="${r.mailRef}" target="_blank" style="color:var(--cyan);font-size:12px;font-weight:600;text-decoration:none;" title="${r.mailRef}">📧 Voir</a>` : '<span class="secondary">—</span>'}</td>
         <td><div class="actions-cell">
           <button class="act-btn" onclick="openModal('fm','${r._id}')">✏️</button>
           <button class="del-btn" onclick="delRow('fm','${r._id}')">🗑</button>
@@ -908,7 +911,8 @@ window.openModal = (type, id) => {
         <option ${e.statut==='Relancé'?'selected':''}>Relancé</option>
         <option ${e.statut==='Sans réponse'?'selected':''}>Sans réponse</option>
       </select></div>
-      <div class="form-row"><label>Infos</label><textarea id="f-infos">${e.infos||''}</textarea></div>`;
+      <div class="form-row"><label>Infos</label><textarea id="f-infos">${e.infos||''}</textarea></div>
+      <div class="form-row"><label>Lien mail de référence</label><input id="f-mailref" value="${e.mailRef||''}" placeholder="https://mail.google.com/..."></div>`;
   } else if(type==='rdv') {
     fields=`
       <div class="form-row"><label>Contact *</label><input id="f-contact" value="${e.contact||''}" placeholder="Prénom Nom"></div>
@@ -919,7 +923,8 @@ window.openModal = (type, id) => {
         <option ${!e.statut||e.statut==='À confirmer'?'selected':''}>À confirmer</option>
         <option ${e.statut==='Confirmé'?'selected':''}>Confirmé</option>
         <option ${e.statut==='Annulé'?'selected':''}>Annulé</option>
-      </select></div>`;
+      </select></div>
+      <div class="form-row"><label>Lien mail de référence</label><input id="f-mailref" value="${e.mailRef||''}" placeholder="https://mail.google.com/..."></div>`;
   } else {
     fields=`
       <div class="form-row"><label>Nom contact *</label><input id="f-nom" value="${e.nom||''}" placeholder="Prénom Nom"></div>
@@ -928,7 +933,8 @@ window.openModal = (type, id) => {
       <div class="form-row"><label>Statut</label><select id="f-stat">
         <option ${!e.statut||e.statut==='En attente'?'selected':''}>En attente</option>
         <option ${e.statut==='Mis à jour'?'selected':''}>Mis à jour</option>
-      </select></div>`;
+      </select></div>
+      <div class="form-row"><label>Lien mail de référence</label><input id="f-mailref" value="${e.mailRef||''}" placeholder="https://mail.google.com/..."></div>`;
   }
 
   document.getElementById('modal-content').innerHTML=`
@@ -959,13 +965,13 @@ window.saveModal = async type => {
       row={sujet:s,prio:document.getElementById('f-prio').value,statut:document.getElementById('f-stat').value,echeance:document.getElementById('f-ech').value.trim(),responsable:document.getElementById('f-resp').value.trim(),infos:document.getElementById('f-infos').value.trim()};
     } else if(type==='relances') {
       const c=document.getElementById('f-contact').value.trim(),o=document.getElementById('f-objet').value.trim(); if(!c||!o){btn.disabled=false;btn.textContent='Enregistrer';return;}
-      row={contact:c,objet:o,canal:document.getElementById('f-canal').value,echeance:document.getElementById('f-ech').value.trim(),statut:document.getElementById('f-stat').value,infos:document.getElementById('f-infos').value.trim()};
+      row={contact:c,objet:o,canal:document.getElementById('f-canal').value,echeance:document.getElementById('f-ech').value.trim(),statut:document.getElementById('f-stat').value,infos:document.getElementById('f-infos').value.trim(),mailRef:document.getElementById('f-mailref').value.trim()};
     } else if(type==='rdv') {
       const c=document.getElementById('f-contact').value.trim(),o=document.getElementById('f-objet').value.trim(); if(!c||!o){btn.disabled=false;btn.textContent='Enregistrer';return;}
-      row={contact:c,objet:o,date:document.getElementById('f-date').value.trim(),convies:document.getElementById('f-conv').value.trim(),statut:document.getElementById('f-stat').value};
+      row={contact:c,objet:o,date:document.getElementById('f-date').value.trim(),convies:document.getElementById('f-conv').value.trim(),statut:document.getElementById('f-stat').value,mailRef:document.getElementById('f-mailref').value.trim()};
     } else {
       const n=document.getElementById('f-nom').value.trim(),ch=document.getElementById('f-champ').value.trim(); if(!n||!ch){btn.disabled=false;btn.textContent='Enregistrer';return;}
-      row={nom:n,entreprise:document.getElementById('f-ent').value.trim(),champ:ch,statut:document.getElementById('f-stat').value};
+      row={nom:n,entreprise:document.getElementById('f-ent').value.trim(),champ:ch,statut:document.getElementById('f-stat').value,mailRef:document.getElementById('f-mailref').value.trim()};
     }
     if(editCtx.id) await updateDoc(doc(db, COLS[type], editCtx.id), row);
     else await addDoc(collection(db, COLS[type]), row);
