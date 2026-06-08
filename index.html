@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de pilotage</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff;
+    --bg2: #f5f5f3;
+    --bg3: #efefec;
+    --text: #1a1a18;
+    --text2: #6b6b65;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.22);
+    --radius: 8px;
+    --radius-lg: 12px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --bg2: #252523;
+      --bg3: #2e2e2b;
+      --text: #f0f0ec;
+      --text2: #9a9a92;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.2);
+    }
+  }
+  body { font-family: var(--font); background: var(--bg3); color: var(--text); min-height: 100vh; }
+  .app { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+  .header h1 { font-size: 20px; font-weight: 600; color: var(--text); }
+  .sync-status { font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #639922; }
+  .sync-dot.loading { background: #BA7517; animation: pulse 1s infinite; }
+  .sync-dot.error { background: #A32D2D; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; flex-wrap: wrap; background: var(--bg2); padding: 6px; border-radius: var(--radius-lg); border: 0.5px solid var(--border); }
+  .tab { padding: 8px 16px; border-radius: var(--radius); border: none; background: transparent; cursor: pointer; font-size: 13px; color: var(--text2); font-family: var(--font); transition: all 0.15s; display: flex; align-items: center; gap: 7px; }
+  .tab:hover { background: var(--bg3); color: var(--text); }
+  .tab.active { background: var(--bg); color: var(--text); font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .tab .count { font-size: 11px; background: var(--bg3); border-radius: 10px; padding: 1px 7px; color: var(--text2); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 1.25rem; }
+  .stat-card { background: var(--bg); border-radius: var(--radius); padding: 14px 18px; border: 0.5px solid var(--border); }
+  .stat-label { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+  .stat-val { font-size: 24px; font-weight: 600; color: var(--text); }
+  .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; gap: 8px; flex-wrap: wrap; }
+  .toolbar-left { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  select { font-size: 13px; padding: 7px 12px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); color: var(--text); font-family: var(--font); cursor: pointer; }
+  .add-btn { display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); color: var(--text); font-size: 13px; font-family: var(--font); cursor: pointer; font-weight: 500; white-space: nowrap; transition: background 0.15s; }
+  .add-btn:hover { background: var(--bg2); }
+  .table-wrap { background: var(--bg); border-radius: var(--radius-lg); border: 0.5px solid var(--border); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+  thead th { text-align: left; padding: 10px 12px; color: var(--text2); font-weight: 500; font-size: 12px; border-bottom: 0.5px solid var(--border); background: var(--bg2); }
+  tbody tr { border-bottom: 0.5px solid var(--border); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg2); }
+  tbody td { padding: 10px 12px; color: var(--text); vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+  .b-todo { background: #E6F1FB; color: #0C447C; }
+  .b-doing { background: #FAEEDA; color: #633806; }
+  .b-done { background: #EAF3DE; color: #27500A; }
+  .b-relance { background: #FAEEDA; color: #633806; }
+  .b-relanced { background: #EAF3DE; color: #27500A; }
+  .b-noreply { background: #FCEBEB; color: #791F1F; }
+  .b-confirm { background: #FAEEDA; color: #633806; }
+  .b-confirmed { background: #EAF3DE; color: #27500A; }
+  .b-cancelled { background: #FCEBEB; color: #791F1F; }
+  .b-pending { background: #FAEEDA; color: #633806; }
+  .b-updated { background: #EAF3DE; color: #27500A; }
+  .p1 { color: #A32D2D; font-weight: 600; }
+  .p2 { color: #854F0B; }
+  .p3 { color: #3B6D11; }
+  .act-btn { padding: 5px 8px; border-radius: var(--radius); border: 0.5px solid var(--border); background: transparent; cursor: pointer; font-size: 13px; color: var(--text2); transition: all 0.15s; }
+  .act-btn:hover { background: var(--bg2); color: var(--text); }
+  .del-btn { padding: 5px 8px; border-radius: var(--radius); border: 0.5px solid var(--border); background: transparent; cursor: pointer; color: #A32D2D; font-size: 13px; }
+  .del-btn:hover { background: #FCEBEB; }
+  .actions-cell { display: flex; gap: 4px; justify-content: flex-end; }
+  .secondary { font-size: 12px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .empty { text-align: center; padding: 3rem 1rem; color: var(--text2); font-size: 14px; }
+  .loading-row { text-align: center; padding: 2rem; color: var(--text2); font-size: 13px; }
+  /* Modal */
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
+  .modal-bg.open { display: flex; }
+  .modal { background: var(--bg); border-radius: var(--radius-lg); border: 0.5px solid var(--border2); padding: 1.75rem; width: 500px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
+  .modal h2 { font-size: 16px; font-weight: 600; margin-bottom: 1.25rem; color: var(--text); }
+  .form-row { margin-bottom: 14px; }
+  .form-row label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 5px; font-weight: 500; }
+  .form-row input, .form-row select, .form-row textarea { width: 100%; font-size: 13px; padding: 8px 12px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); color: var(--text); font-family: var(--font); }
+  .form-row textarea { resize: vertical; min-height: 70px; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 1.5rem; }
+  .btn-cancel { padding: 8px 18px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: transparent; cursor: pointer; font-size: 13px; color: var(--text2); font-family: var(--font); }
+  .btn-save { padding: 8px 18px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--text); cursor: pointer; font-size: 13px; font-weight: 500; color: var(--bg); font-family: var(--font); transition: opacity 0.15s; }
+  .btn-save:hover { opacity: 0.85; }
+  .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>🗂 Dashboard de pilotage</h1>
+    <div class="sync-status">
+      <div class="sync-dot loading" id="sync-dot"></div>
+      <span id="sync-label">Connexion…</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('todo')" id="tab-todo">✅ To-do <span class="count" id="cnt-todo">—</span></button>
+    <button class="tab" onclick="switchTab('relances')" id="tab-relances">🔔 Relances <span class="count" id="cnt-relances">—</span></button>
+    <button class="tab" onclick="switchTab('rdv')" id="tab-rdv">📅 RDV <span class="count" id="cnt-rdv">—</span></button>
+    <button class="tab" onclick="switchTab('fm')" id="tab-fm">🗄 FileMaker <span class="count" id="cnt-fm">—</span></button>
+  </div>
+
+  <!-- TO-DO -->
+  <div id="panel-todo" class="panel active">
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">À faire</div><div class="stat-val" id="s-t1">—</div></div>
+      <div class="stat-card"><div class="stat-label">En cours</div><div class="stat-val" id="s-t2">—</div></div>
+      <div class="stat-card"><div class="stat-label">Fait</div><div class="stat-val" id="s-t3">—</div></div>
+    </div>
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <select id="ft-stat" onchange="render()"><option value="">Tous les statuts</option><option>À faire</option><option>En cours</option><option>Fait</option></select>
+        <select id="ft-prio" onchange="render()"><option value="">Toutes priorités</option><option>1 — Haute</option><option>2 — Moyenne</option><option>3 — Basse</option></select>
+      </div>
+      <button class="add-btn" onclick="openModal('todo',null)">+ Ajouter</button>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th style="width:36%">Tâche</th><th style="width:9%">Prio</th><th style="width:13%">Statut</th>
+        <th style="width:13%">Échéance</th><th style="width:20%">Infos / Responsable</th><th style="width:9%"></th>
+      </tr></thead>
+      <tbody id="tbody-todo"><tr><td colspan="6" class="loading-row">Chargement…</td></tr></tbody>
+    </table></div>
+  </div>
+
+  <!-- RELANCES -->
+  <div id="panel-relances" class="panel">
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">À relancer</div><div class="stat-val" id="s-rl1">—</div></div>
+      <div class="stat-card"><div class="stat-label">Relancé</div><div class="stat-val" id="s-rl2">—</div></div>
+      <div class="stat-card"><div class="stat-label">Sans réponse</div><div class="stat-val" id="s-rl3">—</div></div>
+    </div>
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <select id="frl-stat" onchange="render()"><option value="">Tous les statuts</option><option>À relancer</option><option>Relancé</option><option>Sans réponse</option></select>
+        <select id="frl-canal" onchange="render()"><option value="">Tous les canaux</option><option>Mail</option><option>Téléphone</option><option>SMS</option><option>LinkedIn</option><option>Autre</option></select>
+      </div>
+      <button class="add-btn" onclick="openModal('relances',null)">+ Ajouter</button>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th style="width:18%">Contact</th><th style="width:22%">Objet</th><th style="width:11%">Canal</th>
+        <th style="width:13%">Échéance</th><th style="width:22%">Infos</th><th style="width:10%">Statut</th><th style="width:4%"></th>
+      </tr></thead>
+      <tbody id="tbody-relances"><tr><td colspan="7" class="loading-row">Chargement…</td></tr></tbody>
+    </table></div>
+  </div>
+
+  <!-- RDV -->
+  <div id="panel-rdv" class="panel">
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">À confirmer</div><div class="stat-val" id="s-r1">—</div></div>
+      <div class="stat-card"><div class="stat-label">Confirmé</div><div class="stat-val" id="s-r2">—</div></div>
+      <div class="stat-card"><div class="stat-label">Annulé</div><div class="stat-val" id="s-r3">—</div></div>
+    </div>
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <select id="fr-stat" onchange="render()"><option value="">Tous les statuts</option><option>À confirmer</option><option>Confirmé</option><option>Annulé</option></select>
+      </div>
+      <button class="add-btn" onclick="openModal('rdv',null)">+ Ajouter</button>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th style="width:18%">Contact</th><th style="width:22%">Objet</th><th style="width:15%">Date souhaitée</th>
+        <th style="width:22%">Personnes conviées</th><th style="width:13%">Statut</th><th style="width:10%"></th>
+      </tr></thead>
+      <tbody id="tbody-rdv"><tr><td colspan="6" class="loading-row">Chargement…</td></tr></tbody>
+    </table></div>
+  </div>
+
+  <!-- FILEMAKER -->
+  <div id="panel-fm" class="panel">
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">En attente</div><div class="stat-val" id="s-f1">—</div></div>
+      <div class="stat-card"><div class="stat-label">Mis à jour</div><div class="stat-val" id="s-f2">—</div></div>
+    </div>
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <select id="ff-stat" onchange="render()"><option value="">Tous les statuts</option><option>En attente</option><option>Mis à jour</option></select>
+      </div>
+      <button class="add-btn" onclick="openModal('fm',null)">+ Ajouter</button>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th style="width:24%">Nom contact</th><th style="width:24%">Entreprise</th>
+        <th style="width:30%">Champ à modifier</th><th style="width:14%">Statut</th><th style="width:8%"></th>
+      </tr></thead>
+      <tbody id="tbody-fm"><tr><td colspan="5" class="loading-row">Chargement…</td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-bg">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCpJl9NyQhAwraXtbc9C9aX815UPz1Kx3Y",
+  authDomain: "dashboard-hc-2c64e.firebaseapp.com",
+  projectId: "dashboard-hc-2c64e",
+  storageBucket: "dashboard-hc-2c64e.firebasestorage.app",
+  messagingSenderId: "1049175355205",
+  appId: "1:1049175355205:web:9624bf0d0f430a7414182c"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Collections
+const COLS = { todo: 'todo', relances: 'relances', rdv: 'rdv', fm: 'fm' };
+let data = { todo: [], relances: [], rdv: [], fm: [] };
+let editCtx = null;
+let loaded = { todo: false, relances: false, rdv: false, fm: false };
+
+// Sync status
+function setSync(state) {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  dot.className = 'sync-dot' + (state === 'ok' ? '' : state === 'loading' ? ' loading' : ' error');
+  lbl.textContent = state === 'ok' ? 'Synchronisé' : state === 'loading' ? 'Connexion…' : 'Erreur de sync';
+}
+
+// Seed initial data if empty
+async function seedIfEmpty(col, items) {
+  if (data[col].length === 0) {
+    for (const item of items) {
+      await addDoc(collection(db, COLS[col]), item);
+    }
+  }
+}
+
+const INIT_TODO = [
+  {sujet:"Shémas",prio:"1 — Haute",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Recrutement stagiaires",prio:"1 — Haute",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"RDV avec Maelig",prio:"1 — Haute",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Mail Guedj",prio:"1 — Haute",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Mail Sybille Maarek",prio:"1 — Haute",statut:"À faire",echeance:"",responsable:"",infos:"Soit on décale soit 20 min"},
+  {sujet:"RDV président Savoie - Carolane",prio:"1 — Haute",statut:"À faire",echeance:"",responsable:"Atanase",infos:"Président pas dispo — rdv 10 min quand il est à Paris (Maire du 17)"},
+  {sujet:"Relancer V.Dusit ass Martranchard dsg Savoie",prio:"1 — Haute",statut:"À faire",echeance:"",responsable:"",infos:"10 min"},
+  {sujet:"CA ANDASS — se faire inviter au congrès",prio:"1 — Haute",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"TROADEC — monter réunion visio 15/20 min",prio:"1 — Haute",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Appeler Natalie Perreira pour RDV Chambéry",prio:"1 — Haute",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Coppé Savoie Portable Saint Badolphe",prio:"1 — Haute",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"PRIO Appeler secrétaire de Maelig",prio:"1 — Haute",statut:"À faire",echeance:"06/06/26",responsable:"Atanase",infos:"Atanase s'en occupe"},
+  {sujet:"Faire les relances RDV Savoie + Manche",prio:"1 — Haute",statut:"À faire",echeance:"06/06/26",responsable:"",infos:"1 Dir Autonomie, cab PcD"},
+  {sujet:"MAIL FERMETURE 1er au 15 août",prio:"1 — Haute",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"Facturation Mayenne",prio:"1 — Haute",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"Relancer maire Carentan",prio:"1 — Haute",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"Veille presse",prio:"2 — Moyenne",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Process presse lancement",prio:"2 — Moyenne",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Méthode de travail — Point Hebdo Agenda Atanase",prio:"2 — Moyenne",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Carte de visite",prio:"2 — Moyenne",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Mail Les entreprises s'engagent",prio:"2 — Moyenne",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Note HC 17ème",prio:"2 — Moyenne",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Refonte vidéo pluriel",prio:"2 — Moyenne",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"MAJ Date site grand public",prio:"2 — Moyenne",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Créer visio mairie sur le site",prio:"2 — Moyenne",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Créer visio formation",prio:"2 — Moyenne",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Fin juin — deux visio avec toutes les mairies HC",prio:"2 — Moyenne",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Voir mail / SMS groupés",prio:"2 — Moyenne",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Caler RDV mairie de Brest",prio:"2 — Moyenne",statut:"En cours",echeance:"09/07",responsable:"Laurent",infos:"En cours côté Laurent"},
+  {sujet:"Saint-Jean de Luz RDV Mathys",prio:"2 — Moyenne",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"Mettre en place une Todo Atanase",prio:"2 — Moyenne",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"Julianne pour prospection",prio:"2 — Moyenne",statut:"En cours",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"Annuaire Haute-Vienne — contacter interlocuteurs",prio:"2 — Moyenne",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"Stratégie marketing relationnel",prio:"2 — Moyenne",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"FAQ HC",prio:"3 — Basse",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Créer mail Support ingénierie",prio:"3 — Basse",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Numéro Hotline ingénierie",prio:"3 — Basse",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Revoir guide méthodo mairie",prio:"3 — Basse",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"PowerPoint présentation (Clip + volontaires villes)",prio:"3 — Basse",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Guide mairie base de données à MAJ",prio:"3 — Basse",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Est-ce qu'on fusionne les sites ?",prio:"3 — Basse",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Prévoir Assises Heure Civique Amont AMF",prio:"3 — Basse",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"24h de l'Heure Civique",prio:"3 — Basse",statut:"À faire",echeance:"",responsable:"",infos:""},
+  {sujet:"Charte Graphique",prio:"3 — Basse",statut:"En cours",echeance:"06/06/26",responsable:"",infos:"En cours de relecture"},
+  {sujet:"PPT Onboarding",prio:"3 — Basse",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"Dossier de candidature Atout Soleil 2026",prio:"3 — Basse",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"Retroplanning event lancement",prio:"3 — Basse",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"PPT Template",prio:"3 — Basse",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"Planifier réunion ESCP",prio:"3 — Basse",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"Tidiane pour accueil + papier",prio:"3 — Basse",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"Note structuration cabinet",prio:"3 — Basse",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"Note prospection département",prio:"3 — Basse",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"Fédération des centres sociaux — intégrer dans le dev",prio:"3 — Basse",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"Voir Astec",prio:"3 — Basse",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"Rencontrer les scouts Roumains de Paris",prio:"3 — Basse",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"10 notes importantes",prio:"3 — Basse",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"Relancer la fête des voisins",prio:"3 — Basse",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"4 décembre — Retrouver l'extrait passage Mieux",prio:"3 — Basse",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"Note Domytis + Note Emeis",prio:"3 — Basse",statut:"À faire",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"Ranger mes docs",prio:"3 — Basse",statut:"Fait",echeance:"06/06/26",responsable:"",infos:""},
+  {sujet:"Prendre en main les RP",prio:"3 — Basse",statut:"Fait",echeance:"06/06/26",responsable:"",infos:""},
+];
+const INIT_RELANCES = [
+  {contact:"V. Dusit",objet:"Ass Martranchard dsg Savoie",canal:"Téléphone",echeance:"",statut:"À relancer",infos:"10 min"},
+  {contact:"TROADEC",objet:"Monter réunion visio 15/20 min",canal:"Mail",echeance:"",statut:"À relancer",infos:""},
+  {contact:"Natalie Perreira",objet:"RDV Chambéry",canal:"Téléphone",echeance:"",statut:"À relancer",infos:""},
+  {contact:"Maire Carentan",objet:"Relance RDV",canal:"Mail",echeance:"06/06/26",statut:"À relancer",infos:""},
+  {contact:"RDV Savoie + Manche",objet:"1 Dir Autonomie, cab PcD",canal:"Mail",echeance:"06/06/26",statut:"À relancer",infos:""},
+  {contact:"Fête des voisins",objet:"Relance organisation",canal:"Mail",echeance:"06/06/26",statut:"À relancer",infos:""},
+];
+const INIT_RDV = [
+  {contact:"Maelig",objet:"RDV à caler",date:"",convies:"",statut:"À confirmer"},
+  {contact:"Carolane / Président Savoie",objet:"RDV 10 min quand il est à Paris",date:"",convies:"Atanase, Maire du 17",statut:"À confirmer"},
+  {contact:"V. Dusit",objet:"RDV 10 min — Savoie",date:"",convies:"",statut:"À confirmer"},
+  {contact:"TROADEC",objet:"Visio 15/20 min",date:"",convies:"",statut:"À confirmer"},
+  {contact:"Natalie Perreira",objet:"RDV Chambéry",date:"",convies:"",statut:"À confirmer"},
+  {contact:"Mairie de Brest",objet:"RDV en cours",date:"09/07",convies:"Laurent",statut:"Confirmé"},
+  {contact:"Mathys",objet:"Saint-Jean de Luz",date:"",convies:"",statut:"À confirmer"},
+  {contact:"ESCP",objet:"Planifier réunion",date:"",convies:"",statut:"À confirmer"},
+];
+
+// Real-time listeners
+function listen(col) {
+  onSnapshot(collection(db, COLS[col]), (snap) => {
+    data[col] = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    loaded[col] = true;
+    // Seed if first load and empty
+    if (data[col].length === 0) {
+      const seeds = { todo: INIT_TODO, relances: INIT_RELANCES, rdv: INIT_RDV, fm: [] };
+      if (seeds[col].length > 0) seedIfEmpty(col, seeds[col]);
+    }
+    render();
+    if (Object.values(loaded).every(Boolean)) setSync('ok');
+  }, () => setSync('error'));
+}
+
+['todo','relances','rdv','fm'].forEach(listen);
+
+// Tab switching
+window.switchTab = function(t) {
+  ['todo','relances','rdv','fm'].forEach(x => {
+    document.getElementById('panel-'+x).classList.toggle('active', x===t);
+    document.getElementById('tab-'+x).classList.toggle('active', x===t);
+  });
+};
+
+// Badge helpers
+const bMap = {
+  todo: {'À faire':'b-todo','En cours':'b-doing','Fait':'b-done'},
+  relances: {'À relancer':'b-relance','Relancé':'b-relanced','Sans réponse':'b-noreply'},
+  rdv: {'À confirmer':'b-confirm','Confirmé':'b-confirmed','Annulé':'b-cancelled'},
+  fm: {'En attente':'b-pending','Mis à jour':'b-updated'}
+};
+const badge = (s, col) => `<span class="badge ${bMap[col][s]||''}">${s}</span>`;
+const pc = p => p&&p.startsWith('1')?'p1':p&&p.startsWith('2')?'p2':'p3';
+
+window.render = function() {
+  const fs=document.getElementById('ft-stat').value, fp=document.getElementById('ft-prio').value;
+  const frl=document.getElementById('frl-stat').value, frlc=document.getElementById('frl-canal').value;
+  const fr=document.getElementById('fr-stat').value, ff=document.getElementById('ff-stat').value;
+
+  document.getElementById('cnt-todo').textContent = data.todo.length;
+  document.getElementById('cnt-relances').textContent = data.relances.length;
+  document.getElementById('cnt-rdv').textContent = data.rdv.length;
+  document.getElementById('cnt-fm').textContent = data.fm.length;
+  document.getElementById('s-t1').textContent = data.todo.filter(r=>r.statut==='À faire').length;
+  document.getElementById('s-t2').textContent = data.todo.filter(r=>r.statut==='En cours').length;
+  document.getElementById('s-t3').textContent = data.todo.filter(r=>r.statut==='Fait').length;
+  document.getElementById('s-rl1').textContent = data.relances.filter(r=>r.statut==='À relancer').length;
+  document.getElementById('s-rl2').textContent = data.relances.filter(r=>r.statut==='Relancé').length;
+  document.getElementById('s-rl3').textContent = data.relances.filter(r=>r.statut==='Sans réponse').length;
+  document.getElementById('s-r1').textContent = data.rdv.filter(r=>r.statut==='À confirmer').length;
+  document.getElementById('s-r2').textContent = data.rdv.filter(r=>r.statut==='Confirmé').length;
+  document.getElementById('s-r3').textContent = data.rdv.filter(r=>r.statut==='Annulé').length;
+  document.getElementById('s-f1').textContent = data.fm.filter(r=>r.statut==='En attente').length;
+  document.getElementById('s-f2').textContent = data.fm.filter(r=>r.statut==='Mis à jour').length;
+
+  // TODO
+  let todos = data.todo;
+  if(fs) todos=todos.filter(r=>r.statut===fs);
+  if(fp) todos=todos.filter(r=>r.prio===fp);
+  document.getElementById('tbody-todo').innerHTML = todos.length===0
+    ? `<tr><td colspan="6" class="empty">Aucune tâche</td></tr>`
+    : todos.map(r=>`<tr>
+        <td title="${r.sujet||''}">${r.sujet||''}</td>
+        <td><span class="${pc(r.prio)}">${(r.prio||'').charAt(0)}</span></td>
+        <td>${badge(r.statut,'todo')}</td>
+        <td class="secondary">${r.echeance||'—'}</td>
+        <td class="secondary" title="${r.infos||r.responsable||''}">${r.infos||r.responsable||'—'}</td>
+        <td><div class="actions-cell">
+          <button class="act-btn" onclick="openModal('todo','${r._id}')">✏️</button>
+          <button class="del-btn" onclick="delRow('todo','${r._id}')">🗑</button>
+        </div></td></tr>`).join('');
+
+  // RELANCES
+  let rls = data.relances;
+  if(frl) rls=rls.filter(r=>r.statut===frl);
+  if(frlc) rls=rls.filter(r=>r.canal===frlc);
+  document.getElementById('tbody-relances').innerHTML = rls.length===0
+    ? `<tr><td colspan="7" class="empty">Aucune relance</td></tr>`
+    : rls.map(r=>`<tr>
+        <td title="${r.contact||''}">${r.contact||''}</td>
+        <td title="${r.objet||''}">${r.objet||''}</td>
+        <td class="secondary">${r.canal||''}</td>
+        <td class="secondary">${r.echeance||'—'}</td>
+        <td class="secondary" title="${r.infos||''}">${r.infos||'—'}</td>
+        <td>${badge(r.statut,'relances')}</td>
+        <td><div class="actions-cell">
+          <button class="act-btn" onclick="openModal('relances','${r._id}')">✏️</button>
+          <button class="del-btn" onclick="delRow('relances','${r._id}')">🗑</button>
+        </div></td></tr>`).join('');
+
+  // RDV
+  let rdvs = fr ? data.rdv.filter(r=>r.statut===fr) : data.rdv;
+  document.getElementById('tbody-rdv').innerHTML = rdvs.length===0
+    ? `<tr><td colspan="6" class="empty">Aucun RDV</td></tr>`
+    : rdvs.map(r=>`<tr>
+        <td title="${r.contact||''}">${r.contact||''}</td>
+        <td title="${r.objet||''}">${r.objet||''}</td>
+        <td class="secondary">${r.date||'—'}</td>
+        <td class="secondary" title="${r.convies||''}">${r.convies||'—'}</td>
+        <td>${badge(r.statut,'rdv')}</td>
+        <td><div class="actions-cell">
+          <button class="act-btn" onclick="openModal('rdv','${r._id}')">✏️</button>
+          <button class="del-btn" onclick="delRow('rdv','${r._id}')">🗑</button>
+        </div></td></tr>`).join('');
+
+  // FILEMAKER
+  let fms = ff ? data.fm.filter(r=>r.statut===ff) : data.fm;
+  document.getElementById('tbody-fm').innerHTML = fms.length===0
+    ? `<tr><td colspan="5" class="empty">Aucune entrée</td></tr>`
+    : fms.map(r=>`<tr>
+        <td title="${r.nom||''}">${r.nom||''}</td>
+        <td title="${r.entreprise||''}">${r.entreprise||'—'}</td>
+        <td title="${r.champ||''}">${r.champ||''}</td>
+        <td>${badge(r.statut,'fm')}</td>
+        <td><div class="actions-cell">
+          <button class="act-btn" onclick="openModal('fm','${r._id}')">✏️</button>
+          <button class="del-btn" onclick="delRow('fm','${r._id}')">🗑</button>
+        </div></td></tr>`).join('');
+};
+
+window.delRow = async function(col, id) {
+  if(!confirm('Supprimer cette entrée ?')) return;
+  await deleteDoc(doc(db, COLS[col], id));
+};
+
+window.openModal = function(type, id) {
+  editCtx = { type, id };
+  const existing = id ? data[type].find(r=>r._id===id) : null;
+  const e = existing || {};
+  const isEdit = !!existing;
+  const titles = {todo:'Tâche',relances:'Relance',rdv:'RDV',fm:'Entrée FileMaker'};
+  let fields = '';
+
+  if(type==='todo') {
+    fields=`
+      <div class="form-row"><label>Tâche *</label><input id="f-sujet" value="${e.sujet||''}"></div>
+      <div class="form-row"><label>Priorité</label><select id="f-prio">
+        <option ${!e.prio||e.prio.startsWith('1')?'selected':''}>1 — Haute</option>
+        <option ${e.prio&&e.prio.startsWith('2')?'selected':''}>2 — Moyenne</option>
+        <option ${e.prio&&e.prio.startsWith('3')?'selected':''}>3 — Basse</option>
+      </select></div>
+      <div class="form-row"><label>Statut</label><select id="f-stat">
+        <option ${!e.statut||e.statut==='À faire'?'selected':''}>À faire</option>
+        <option ${e.statut==='En cours'?'selected':''}>En cours</option>
+        <option ${e.statut==='Fait'?'selected':''}>Fait</option>
+      </select></div>
+      <div class="form-row"><label>Échéance</label><input id="f-ech" value="${e.echeance||''}" placeholder="ex: 15/06/26"></div>
+      <div class="form-row"><label>Responsable</label><input id="f-resp" value="${e.responsable||''}"></div>
+      <div class="form-row"><label>Infos</label><textarea id="f-infos">${e.infos||''}</textarea></div>`;
+  } else if(type==='relances') {
+    fields=`
+      <div class="form-row"><label>Contact *</label><input id="f-contact" value="${e.contact||''}"></div>
+      <div class="form-row"><label>Objet *</label><input id="f-objet" value="${e.objet||''}"></div>
+      <div class="form-row"><label>Canal</label><select id="f-canal">
+        ${['Mail','Téléphone','SMS','LinkedIn','Autre'].map(c=>`<option ${e.canal===c?'selected':''}>${c}</option>`).join('')}
+      </select></div>
+      <div class="form-row"><label>Échéance</label><input id="f-ech" value="${e.echeance||''}" placeholder="ex: 15/06/26"></div>
+      <div class="form-row"><label>Statut</label><select id="f-stat">
+        <option ${!e.statut||e.statut==='À relancer'?'selected':''}>À relancer</option>
+        <option ${e.statut==='Relancé'?'selected':''}>Relancé</option>
+        <option ${e.statut==='Sans réponse'?'selected':''}>Sans réponse</option>
+      </select></div>
+      <div class="form-row"><label>Infos</label><textarea id="f-infos">${e.infos||''}</textarea></div>`;
+  } else if(type==='rdv') {
+    fields=`
+      <div class="form-row"><label>Contact *</label><input id="f-contact" value="${e.contact||''}"></div>
+      <div class="form-row"><label>Objet *</label><input id="f-objet" value="${e.objet||''}"></div>
+      <div class="form-row"><label>Date souhaitée</label><input id="f-date" value="${e.date||''}" placeholder="ex: 15/06/26"></div>
+      <div class="form-row"><label>Personnes conviées</label><input id="f-conv" value="${e.convies||''}"></div>
+      <div class="form-row"><label>Statut</label><select id="f-stat">
+        <option ${!e.statut||e.statut==='À confirmer'?'selected':''}>À confirmer</option>
+        <option ${e.statut==='Confirmé'?'selected':''}>Confirmé</option>
+        <option ${e.statut==='Annulé'?'selected':''}>Annulé</option>
+      </select></div>`;
+  } else {
+    fields=`
+      <div class="form-row"><label>Nom contact *</label><input id="f-nom" value="${e.nom||''}"></div>
+      <div class="form-row"><label>Entreprise</label><input id="f-ent" value="${e.entreprise||''}"></div>
+      <div class="form-row"><label>Champ à modifier *</label><input id="f-champ" value="${e.champ||''}"></div>
+      <div class="form-row"><label>Statut</label><select id="f-stat">
+        <option ${!e.statut||e.statut==='En attente'?'selected':''}>En attente</option>
+        <option ${e.statut==='Mis à jour'?'selected':''}>Mis à jour</option>
+      </select></div>`;
+  }
+
+  document.getElementById('modal-content').innerHTML=`<h2>${isEdit?'Modifier':'Ajouter'} — ${titles[type]}</h2>${fields}
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-save" id="btn-save-modal" onclick="saveModal('${type}')">Enregistrer</button>
+    </div>`;
+  document.getElementById('modal-bg').classList.add('open');
+};
+
+window.closeModal = function() {
+  document.getElementById('modal-bg').classList.remove('open');
+  editCtx = null;
+};
+
+window.saveModal = async function(type) {
+  const btn = document.getElementById('btn-save-modal');
+  btn.disabled = true; btn.textContent = 'Enregistrement…';
+  let row;
+  try {
+    if(type==='todo') {
+      const s=document.getElementById('f-sujet').value.trim(); if(!s){btn.disabled=false;btn.textContent='Enregistrer';return;}
+      row={sujet:s,prio:document.getElementById('f-prio').value,statut:document.getElementById('f-stat').value,echeance:document.getElementById('f-ech').value.trim(),responsable:document.getElementById('f-resp').value.trim(),infos:document.getElementById('f-infos').value.trim()};
+    } else if(type==='relances') {
+      const c=document.getElementById('f-contact').value.trim(),o=document.getElementById('f-objet').value.trim(); if(!c||!o){btn.disabled=false;btn.textContent='Enregistrer';return;}
+      row={contact:c,objet:o,canal:document.getElementById('f-canal').value,echeance:document.getElementById('f-ech').value.trim(),statut:document.getElementById('f-stat').value,infos:document.getElementById('f-infos').value.trim()};
+    } else if(type==='rdv') {
+      const c=document.getElementById('f-contact').value.trim(),o=document.getElementById('f-objet').value.trim(); if(!c||!o){btn.disabled=false;btn.textContent='Enregistrer';return;}
+      row={contact:c,objet:o,date:document.getElementById('f-date').value.trim(),convies:document.getElementById('f-conv').value.trim(),statut:document.getElementById('f-stat').value};
+    } else {
+      const n=document.getElementById('f-nom').value.trim(),ch=document.getElementById('f-champ').value.trim(); if(!n||!ch){btn.disabled=false;btn.textContent='Enregistrer';return;}
+      row={nom:n,entreprise:document.getElementById('f-ent').value.trim(),champ:ch,statut:document.getElementById('f-stat').value};
+    }
+    if(editCtx.id) await updateDoc(doc(db, COLS[type], editCtx.id), row);
+    else await addDoc(collection(db, COLS[type]), row);
+    closeModal();
+  } catch(err) {
+    btn.disabled=false; btn.textContent='Enregistrer';
+    alert('Erreur : ' + err.message);
+  }
+};
+
+document.getElementById('modal-bg').addEventListener('click', e => {
+  if(e.target===document.getElementById('modal-bg')) closeModal();
+});
+</script>
+</body>
+</html>
