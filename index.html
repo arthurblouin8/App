@@ -37,7 +37,7 @@ input,select,textarea{font-family:inherit}
 .login-reset{background:none;border:none;color:#bbb;font-size:10px;cursor:pointer;text-decoration:underline;font-family:inherit;margin-top:6px}
 
 /* LAYOUT */
-#app{display:none;height:100vh;overflow:hidden}
+#app{display:block;height:100vh;overflow:hidden}
 .sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sidebar-w);background:var(--navy);display:flex;flex-direction:column;z-index:100}
 .sidebar-logo{padding:18px 20px 14px;border-bottom:1px solid rgba(255,255,255,.1)}
 .sidebar-dept{font-size:10px;font-weight:600;color:var(--yellow);letter-spacing:.1em;text-transform:uppercase;margin-top:6px}
@@ -265,7 +265,7 @@ td.muted{color:var(--gray-600)}
 </div>
 
 <!-- ══ APP ══ -->
-<div id="app" style="display:block">
+<div id="app">
 
   <!-- Sidebar -->
   <nav class="sidebar">
