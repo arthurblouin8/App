@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--cyan:#00AEEF;--navy:#1B2A6B;--yellow:#FFD93D;--magenta:#E91E63;--green:#6FBE3F;--orange:#F77F00;--violet:#8E44AD;--coral:#E63946;--gray-50:#F8F9FC;--gray-100:#F0F2F8;--gray-200:#E2E6F0;--gray-400:#9AA3BF;--gray-600:#5B6380;--sidebar-w:240px;--topbar-h:60px;--radius:12px;--shadow:0 2px 12px rgba(27,42,107,.08);--shadow-lg:0 8px 32px rgba(27,42,107,.14)}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -360,6 +361,28 @@ td.muted{color:var(--gray-600)}
   .page { padding:12px 10px 60px; }
 }
 
+/* KANBAN */
+.kanban-board{display:flex;gap:14px;overflow-x:auto;padding-bottom:16px}
+.kanban-col{flex:0 0 260px;background:var(--gray-100);border-radius:var(--radius);padding:12px;display:flex;flex-direction:column;max-height:calc(100vh - 220px)}
+.kanban-col-header{font-size:12px;font-weight:700;padding:6px 8px;margin-bottom:10px;border-radius:8px;display:flex;justify-content:space-between;align-items:center}
+.kanban-col-count{background:rgba(0,0,0,.08);padding:1px 8px;border-radius:10px;font-size:11px}
+.kanban-cards{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:60px}
+.kanban-card{background:white;border-radius:8px;padding:10px 12px;box-shadow:0 1px 3px rgba(27,42,107,.1);cursor:grab;transition:box-shadow .15s,transform .15s;border:1px solid var(--gray-100)}
+.kanban-card:hover{box-shadow:var(--shadow-lg)}
+.kanban-card.dragging{opacity:.4}
+.kanban-card-name{font-size:13px;font-weight:700;margin-bottom:4px}
+.kanban-card-meta{font-size:11px;color:var(--gray-400)}
+.kanban-col.drag-over{background:#E3F2FD}
+
+/* HISTORIQUE GLOBAL */
+.histo-entry{display:flex;gap:14px;padding:14px 20px;border-bottom:1px solid var(--gray-100)}
+.histo-entry:hover{background:var(--gray-50)}
+.histo-entry:last-child{border-bottom:none}
+.histo-dot{width:9px;height:9px;border-radius:50%;background:var(--cyan);flex-shrink:0;margin-top:6px}
+.histo-commune{font-weight:700;color:var(--navy);cursor:pointer}
+.histo-commune:hover{text-decoration:underline}
+.histo-meta{font-size:11px;color:var(--gray-400);margin-top:3px}
+
 </style>
 </head>
 <body>
@@ -397,9 +420,11 @@ td.muted{color:var(--gray-600)}
       <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard"><span class="nav-icon">🏠</span> Tableau de bord</div>
       <div class="nav-item" onclick="showPage('map')" id="nav-map"><span class="nav-icon">🗺️</span> Carte du déploiement</div>
       <div class="nav-item" onclick="showPage('communes')" id="nav-communes"><span class="nav-icon">🏘️</span> Communes</div>
+      <div class="nav-item" onclick="showPage('kanban')" id="nav-kanban"><span class="nav-icon">📋</span> Vue Kanban</div>
       <div class="nav-item" onclick="showPage('agenda')" id="nav-agenda"><span class="nav-icon">📅</span> Agenda</div>
       <div class="nav-item" onclick="showPage('notifications')" id="nav-notifications"><span class="nav-icon">🔔</span> Notifications<span class="nav-badge" id="notif-count" style="display:none">0</span></div>
       <div class="nav-item" onclick="showPage('stats')" id="nav-stats"><span class="nav-icon">📊</span> Statistiques</div>
+      <div class="nav-item" onclick="showPage('historique')" id="nav-historique"><span class="nav-icon">🕓</span> Historique global</div>
       <div class="nav-item" onclick="showPage('settings')" id="nav-settings"><span class="nav-icon">⚙️</span> Paramètres</div>
     </div>
     <div class="sidebar-user">
@@ -468,6 +493,14 @@ td.muted{color:var(--gray-600)}
             <option>Lancement programmé</option><option>Réunion habitants</option><option>Heure Civique lancée</option>
             <option>Suivi programmé</option><option>Suivi effectué</option>
           </select>
+          <select class="filter-select" id="filter-dept-presence" onchange="filterTable()">
+            <option value="">Présence Dpt (RDV)</option>
+            <option value="oui">✅ Présent</option>
+            <option value="non">❌ Absent</option>
+            <option value="à confirmer">⏳ À confirmer</option>
+          </select>
+          <button class="btn-secondary" onclick="triggerImportCSV()">📤 Importer CSV</button>
+          <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="handleImportCSV(event)">
           <button class="btn-primary" onclick="exportCSV()">📥 Exporter CSV</button>
         </div>
         <div class="table-wrap">
@@ -490,6 +523,14 @@ td.muted{color:var(--gray-600)}
           <div class="pagination-btns" id="pagination-btns"></div>
         </div>
       </div>
+    </div>
+
+    <div class="page" id="page-kanban">
+      <div class="page-header"><div class="page-title">Vue Kanban</div><div class="page-subtitle">Glissez les communes entre colonnes pour changer leur statut</div></div>
+      <div class="kanban-toolbar" style="margin-bottom:16px;display:flex;gap:10px;">
+        <div class="table-search" style="max-width:280px"><span class="si">🔍</span><input type="text" placeholder="Rechercher une commune…" id="kanban-search" autocomplete="off" oninput="renderKanban()"></div>
+      </div>
+      <div class="kanban-board" id="kanban-board"></div>
     </div>
 
     <div class="page" id="page-agenda">
@@ -522,6 +563,14 @@ td.muted{color:var(--gray-600)}
         <div class="chart-card-lg"><div class="chart-title">Progression des étapes</div><div class="chart-wrap-lg"><canvas id="chart-etapes-full"></canvas></div></div>
         <div class="chart-card-lg" style="grid-column:1/-1"><div class="chart-title">Taux d'avancement global</div><div class="chart-wrap-lg"><canvas id="chart-avancement"></canvas></div></div>
       </div>
+    </div>
+
+    <div class="page" id="page-historique">
+      <div class="page-header"><div class="page-title">Historique global</div><div class="page-subtitle">Toutes les modifications de l'équipe, toutes communes confondues</div></div>
+      <div class="table-toolbar" style="background:white;border-radius:var(--radius) var(--radius) 0 0;box-shadow:var(--shadow);border:1px solid var(--gray-100);border-bottom:none;">
+        <div class="table-search"><span class="si">🔍</span><input type="text" placeholder="Filtrer par commune ou utilisateur…" id="histo-search" autocomplete="off" oninput="renderHistoriqueGlobal()"></div>
+      </div>
+      <div id="historique-global-list" style="background:white;border-radius:0 0 var(--radius) var(--radius);box-shadow:var(--shadow);border:1px solid var(--gray-100);border-top:none;max-height:70vh;overflow-y:auto;"></div>
     </div>
 
     <div class="page" id="page-settings">
@@ -563,6 +612,8 @@ td.muted{color:var(--gray-600)}
 // ══════════════════════════════════════════════════
 const SUPABASE_URL = "https://heixqyyytrrvmuogbbbu.supabase.co";
 const SUPABASE_KEY = "sb_publishable_EKb0ETlxgUkCkxeC9VEfww_yFnqYFZJ";
+var supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+var realtimeChannel = null;
 
 function sbHeaders() {
   return {
@@ -635,50 +686,48 @@ var saveTimeout = null;
 // ══════════════════════════════════════════════════
 // AUTH
 // ══════════════════════════════════════════════════
-function getUsers() {
-  try {
-    var stored = localStorage.getItem("hc_users");
-    if (!stored) return JSON.parse(JSON.stringify(USERS_DEFAULT));
-    var users = JSON.parse(stored);
-    if (!Array.isArray(users) || !users.length || !users[0].password) {
-      localStorage.removeItem("hc_users");
-      return JSON.parse(JSON.stringify(USERS_DEFAULT));
-    }
-    if (!users.find(function(u) { return u.username === "admin"; })) users.unshift(USERS_DEFAULT[0]);
-    return users;
-  } catch(e) {
-    localStorage.removeItem("hc_users");
-    return JSON.parse(JSON.stringify(USERS_DEFAULT));
-  }
+async function sha256(text) {
+  var enc = new TextEncoder().encode(text);
+  var hashBuffer = await crypto.subtle.digest("SHA-256", enc);
+  var hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(function(b) { return b.toString(16).padStart(2, "0"); }).join("");
 }
 
-function doLogin() {
+async function doLogin() {
   var u = document.getElementById("login-user").value.trim();
   var p = document.getElementById("login-pass").value.trim();
   var err = document.getElementById("login-error");
   if (!u || !p) { err.textContent = "Veuillez remplir les deux champs."; return; }
-  var users = getUsers();
-  var user = users.find(function(x) { return x.username === u && x.password === p; });
-  if (user) {
-    currentUser = user;
-    try { sessionStorage.setItem("hc_session", JSON.stringify(user)); } catch(e) {}
-    document.getElementById("login-screen").style.display = "none";
-    document.getElementById("app").style.display = "block";
-    err.textContent = "";
-    initApp();
-  } else {
-    err.textContent = "Identifiant ou mot de passe incorrect.";
-    document.getElementById("login-pass").value = "";
-    document.getElementById("login-pass").focus();
+  err.textContent = "Connexion…";
+  try {
+    var hash = await sha256(p);
+    var rows = await sbGet("utilisateurs", "username=eq." + encodeURIComponent(u) + "&select=*");
+    var user = rows.find(function(x) { return x.password_hash === hash; });
+    if (user && user.actif !== false) {
+      currentUser = { id: user.id, username: user.username, name: user.name, role: user.role };
+      try { sessionStorage.setItem("hc_session", JSON.stringify(currentUser)); } catch(e) {}
+      // Mettre à jour la dernière connexion
+      sbUpdate("utilisateurs", user.id, { derniere_connexion: new Date().toISOString() }).catch(function(){});
+      document.getElementById("login-screen").style.display = "none";
+      document.getElementById("app").style.display = "block";
+      err.textContent = "";
+      initApp();
+    } else {
+      err.textContent = "Identifiant ou mot de passe incorrect.";
+      document.getElementById("login-pass").value = "";
+      document.getElementById("login-pass").focus();
+    }
+  } catch(e) {
+    err.textContent = "Erreur de connexion au serveur.";
+    console.error(e);
   }
 }
 
 function resetAuth() {
-  localStorage.removeItem("hc_users");
   sessionStorage.removeItem("hc_session");
   document.getElementById("login-user").value = "";
   document.getElementById("login-pass").value = "";
-  document.getElementById("login-error").textContent = "Réinitialisé. Utilisez : admin / admin123";
+  document.getElementById("login-error").textContent = "Session effacée. Utilisez : admin / admin123";
   document.getElementById("login-user").focus();
 }
 
@@ -690,6 +739,15 @@ function doLogout() {
   document.getElementById("login-user").value = "";
   document.getElementById("login-pass").value = "";
 }
+
+async function getUsersFromDB() {
+  try {
+    return await sbGet("utilisateurs", "select=id,username,name,role,actif,derniere_connexion&order=name");
+  } catch(e) {
+    return [];
+  }
+}
+
 
 document.getElementById("login-pass").addEventListener("keydown", function(e) { if (e.key === "Enter") doLogin(); });
 document.getElementById("login-user").addEventListener("keydown", function(e) { if (e.key === "Enter") document.getElementById("login-pass").focus(); });
@@ -733,8 +791,61 @@ async function initApp() {
   renderUsers();
   computeNotifications();
 
-  // Rafraîchissement automatique toutes les 30 secondes
-  setInterval(function() { refreshFromSupabase(); }, 30000);
+  // Synchronisation en temps réel via Supabase Realtime
+  setupRealtimeSync();
+  // Filet de sécurité : rafraîchissement périodique léger (au cas où le websocket tombe)
+  setInterval(function() { refreshFromSupabase(); }, 60000);
+}
+
+function setupRealtimeSync() {
+  if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel);
+  realtimeChannel = supabaseClient
+    .channel("communes-changes")
+    .on("postgres_changes", { event: "*", schema: "public", table: "communes" }, function(payload) {
+      handleRealtimeChange(payload);
+    })
+    .subscribe(function(status) {
+      if (status === "SUBSCRIBED") setSyncStatus("ok", "● Temps réel actif");
+      else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") setSyncStatus("error", "✕ Hors ligne");
+    });
+}
+
+function handleRealtimeChange(payload) {
+  var row = payload.new || payload.old;
+  if (!row) return;
+  if (row.nom === currentModalCommune) return; // ne pas écraser une fiche en cours d'édition
+
+  if (payload.eventType === "DELETE") {
+    communes = communes.filter(function(c) { return c.id !== row.id; });
+  } else {
+    var mapped = mapRowToCommune(row);
+    var idx = communes.findIndex(function(c) { return c.id === mapped.id; });
+    if (idx >= 0) communes[idx] = mapped;
+    else communes.push(mapped);
+  }
+
+  setSyncStatus("ok", "● Mis à jour");
+  if (document.getElementById("page-communes").classList.contains("active")) { filterTable(); }
+  if (document.getElementById("page-dashboard").classList.contains("active")) renderDashboard();
+  if (document.getElementById("page-map").classList.contains("active")) updateMapLayer();
+  if (document.getElementById("page-kanban") && document.getElementById("page-kanban").classList.contains("active")) renderKanban();
+  computeNotifications();
+}
+
+function mapRowToCommune(row) {
+  return {
+    id: row.id, nom: row.nom,
+    statut: row.statut || "À contacter", etape: row.etape || "",
+    referent: row.referent || "", contact_nom: row.contact_nom || "",
+    contact_fonction: row.contact_fonction || "", contact_tel: row.contact_tel || "",
+    contact_email: row.contact_email || "", dernier_echange: row.dernier_echange || "",
+    prochaine_relance: row.prochaine_relance || "", commentaires: row.commentaires || "",
+    notes: row.notes || "", dept_presence_rdv: row.dept_presence_rdv || "",
+    cp_type: row.cp_type || "", cp_date: row.cp_date || "",
+    dept_presence_cp: row.dept_presence_cp || "",
+    history: Array.isArray(row.history) ? row.history : [],
+    agenda: Array.isArray(row.agenda) ? row.agenda : []
+  };
 }
 
 async function loadFromSupabase() {
@@ -745,44 +856,18 @@ async function loadFromSupabase() {
     var dbMap = {};
     data.forEach(function(row) { dbMap[row.nom] = row; });
 
-    // Créer les communes manquantes en base
     var missing = COMMUNES_63.filter(function(nom) { return !dbMap[nom]; });
     if (missing.length > 0) {
       showLoading("Initialisation de " + missing.length + " communes…");
       var batch = missing.map(function(nom) { return makeCommune(nom); });
-      // Insérer par lots de 50
       for (var i = 0; i < batch.length; i += 50) {
         var chunk = batch.slice(i, i + 50);
         await sbUpsert("communes", chunk);
       }
-      // Recharger
       data = await sbGet("communes", "order=nom&limit=500");
     }
 
-    communes = data.map(function(row) {
-      return {
-        id: row.id,
-        nom: row.nom,
-        statut: row.statut || "À contacter",
-        etape: row.etape || "",
-        referent: row.referent || "",
-        contact_nom: row.contact_nom || "",
-        contact_fonction: row.contact_fonction || "",
-        contact_tel: row.contact_tel || "",
-        contact_email: row.contact_email || "",
-        dernier_echange: row.dernier_echange || "",
-        prochaine_relance: row.prochaine_relance || "",
-        commentaires: row.commentaires || "",
-        notes: row.notes || "",
-        dept_presence_rdv: row.dept_presence_rdv || "",
-        cp_type: row.cp_type || "",
-        cp_date: row.cp_date || "",
-        dept_presence_cp: row.dept_presence_cp || "",
-        history: Array.isArray(row.history) ? row.history : [],
-        agenda: Array.isArray(row.agenda) ? row.agenda : []
-      };
-    });
-
+    communes = data.map(mapRowToCommune);
     setSyncStatus("ok", "● Connecté");
     hideLoading();
   } catch(e) {
@@ -796,39 +881,20 @@ async function loadFromSupabase() {
 async function refreshFromSupabase() {
   try {
     var data = await sbGet("communes", "order=nom&limit=500");
-    var updated = false;
     data.forEach(function(row) {
+      if (row.nom === currentModalCommune) return;
       var idx = communes.findIndex(function(c) { return c.nom === row.nom; });
-      if (idx >= 0) {
-        var local = communes[idx];
-        // Mettre à jour seulement si pas en cours d'édition
-        if (local.nom !== currentModalCommune) {
-          communes[idx] = {
-            id: row.id, nom: row.nom,
-            statut: row.statut || "À contacter", etape: row.etape || "",
-            referent: row.referent || "", contact_nom: row.contact_nom || "",
-            contact_fonction: row.contact_fonction || "", contact_tel: row.contact_tel || "",
-            contact_email: row.contact_email || "", dernier_echange: row.dernier_echange || "",
-            prochaine_relance: row.prochaine_relance || "", commentaires: row.commentaires || "",
-            notes: row.notes || "", dept_presence_rdv: row.dept_presence_rdv || "",
-            cp_type: row.cp_type || "", cp_date: row.cp_date || "",
-            dept_presence_cp: row.dept_presence_cp || "",
-            history: Array.isArray(row.history) ? row.history : [],
-            agenda: Array.isArray(row.agenda) ? row.agenda : []
-          };
-          updated = true;
-        }
-      }
+      var mapped = mapRowToCommune(row);
+      if (idx >= 0) communes[idx] = mapped; else communes.push(mapped);
     });
-    if (updated) {
-      setSyncStatus("ok", "● Connecté");
-      if (document.getElementById("page-communes").classList.contains("active")) renderTableBody();
-      if (document.getElementById("page-dashboard").classList.contains("active")) renderDashboard();
-      computeNotifications();
-    }
+    setSyncStatus("ok", "● Connecté");
+    if (document.getElementById("page-communes").classList.contains("active")) renderTableBody();
+    if (document.getElementById("page-dashboard").classList.contains("active")) renderDashboard();
+    computeNotifications();
   } catch(e) {
     setSyncStatus("error", "✕ Hors ligne");
   }
+
 }
 
 async function saveCommune(c) {
@@ -875,9 +941,11 @@ function showPage(page) {
   if (page === "communes") renderTable();
   if (page === "dashboard") renderDashboard();
   if (page === "map") { renderMapStats(); initMap(); }
+  if (page === "kanban") renderKanban();
   if (page === "agenda") renderCalendar();
   if (page === "notifications") renderNotifPage();
   if (page === "stats") renderStatsPage();
+  if (page === "historique") renderHistoriqueGlobal();
   if (page === "settings") renderUsers();
 }
 
@@ -925,9 +993,10 @@ function filterTable() {
   var q = document.getElementById("crm-search").value.toLowerCase();
   var fs = document.getElementById("filter-statut").value;
   var fe = document.getElementById("filter-etape").value;
+  var fd = document.getElementById("filter-dept-presence") ? document.getElementById("filter-dept-presence").value : "";
   filteredCommunes = communes.filter(function(c) {
     var matchQ = !q || [c.nom,c.contact_nom,c.contact_email,c.referent,c.commentaires].some(function(v){return (v||"").toLowerCase().indexOf(q)>=0;});
-    return matchQ && (!fs||c.statut===fs) && (!fe||c.etape===fe);
+    return matchQ && (!fs||c.statut===fs) && (!fe||c.etape===fe) && (!fd||c.dept_presence_rdv===fd);
   });
   sortFilteredCommunes();
   currentPage = 1;
@@ -1084,7 +1153,10 @@ function buildModalBody(c) {
   html += '<div class="form-group"><label class="form-label">Présence politique Département à la CP</label><select class="form-select" data-field="dept_presence_cp"><option value="" '+ (!c.dept_presence_cp?"selected":"") +'>— Non renseigné</option><option value="oui" '+(c.dept_presence_cp==="oui"?"selected":"")+'>✅ Présent</option><option value="non" '+(c.dept_presence_cp==="non"?"selected":"")+'>❌ Absent</option><option value="à confirmer" '+(c.dept_presence_cp==="à confirmer"?"selected":"")+'>⏳ À confirmer</option></select></div>';
   html += '</div></div>';
 
-  html += '<div class="modal-section"><div class="modal-section-title">Contact principal</div><div class="form-grid">';
+  html += '<div class="modal-section"><div class="modal-section-title">Contact principal</div>';
+  html += '<button class="btn-secondary" style="margin-bottom:12px" onclick="prefillMaire(\'' + c.nom.replace(/'/g,"\\'") + '\')">🔄 Pré-remplir avec les données de la mairie (API officielle)</button>';
+  html += '<div id="prefill-status" style="font-size:12px;color:var(--gray-400);margin-bottom:8px"></div>';
+  html += '<div class="form-grid">';
   html += '<div class="form-group"><label class="form-label">Nom</label><input class="form-input" data-field="contact_nom" value="' + (c.contact_nom||"") + '" placeholder="Nom et prénom"></div>';
   html += '<div class="form-group"><label class="form-label">Fonction</label><input class="form-input" data-field="contact_fonction" value="' + (c.contact_fonction||"") + '" placeholder="Maire, DGS…"></div>';
   html += '<div class="form-group"><label class="form-label">Téléphone</label><input class="form-input" data-field="contact_tel" value="' + (c.contact_tel||"") + '" placeholder="06…"></div>';
@@ -1101,11 +1173,38 @@ function buildModalBody(c) {
   return html;
 }
 
+function validateField(field, value) {
+  if (!value) return null;
+  if (field === "contact_email") {
+    var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRe.test(value)) return "Adresse e-mail invalide (ex: nom@domaine.fr)";
+  }
+  if (field === "contact_tel") {
+    var digits = value.replace(/[\s.\-]/g, "");
+    if (!/^(\+33|0)[0-9]{9}$/.test(digits)) return "Numéro de téléphone invalide (10 chiffres attendus)";
+  }
+  if (field === "prochaine_relance" && value) {
+    var d = new Date(value);
+    if (isNaN(d.getTime())) return "Date invalide";
+  }
+  return null;
+}
+
 function saveModalField(el) {
   var c = communes.find(function(x){return x.nom===currentModalCommune;});
   if (!c) return;
   var field = el.dataset.field, oldVal = c[field], newVal = el.value;
   if (oldVal === newVal) return;
+
+  var errMsg = validateField(field, newVal);
+  if (errMsg) {
+    toast(errMsg, "error");
+    el.style.borderColor = "var(--coral)";
+    el.value = oldVal || "";
+    return;
+  }
+  el.style.borderColor = "";
+
   c[field] = newVal;
   addHistory(c, fieldLabel(field) + " : \"" + (oldVal||"—") + "\" → \"" + (newVal||"—") + "\"");
   document.getElementById("modal-badges").innerHTML = badgesHTML(c);
@@ -1371,30 +1470,39 @@ function globalSearch(q) {
 // ══════════════════════════════════════════════════
 // PARAMÈTRES
 // ══════════════════════════════════════════════════
-function renderUsers() {
-  var users = getUsers();
+async function renderUsers() {
+  var users = await getUsersFromDB();
   document.getElementById("users-list").innerHTML = users.map(function(u){
-    return '<div class="user-item"><div class="user-avatar" style="width:36px;height:36px;font-size:14px">'+u.name[0]+'</div><div style="flex:1"><div style="font-size:13px;font-weight:600">'+u.name+'</div><div style="font-size:12px;color:var(--gray-400)">'+u.role+' · @'+u.username+'</div></div>'+(u.id!==1?'<button onclick="deleteUser('+u.id+')" style="background:none;border:none;color:var(--gray-400);cursor:pointer">✕</button>':'')+'</div>';
+    var lastConn = u.derniere_connexion ? fmtDateTime(u.derniere_connexion) : "Jamais connecté";
+    return '<div class="user-item" data-id="'+u.id+'"><div class="user-avatar" style="width:36px;height:36px;font-size:14px">'+u.name[0]+'</div><div style="flex:1"><div style="font-size:13px;font-weight:600">'+u.name+'</div><div style="font-size:12px;color:var(--gray-400)">'+u.role+' · @'+u.username+'</div><div style="font-size:11px;color:var(--gray-400);margin-top:2px">Dernière connexion : '+lastConn+'</div></div>'+(u.username!=="admin"?'<button class="del-user-btn" data-id="'+u.id+'" style="background:none;border:none;color:var(--gray-400);cursor:pointer">✕</button>':'')+'</div>';
   }).join("");
+  document.querySelectorAll(".del-user-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() { deleteUser(this.dataset.id); });
+  });
 }
 
-function addUser() {
-  var name=prompt("Nom complet :"); if(!name) return;
-  var username=prompt("Identifiant :"); if(!username) return;
-  var password=prompt("Mot de passe :"); if(!password) return;
-  var role=prompt("Rôle :","Chargé(e) de mission");
-  var users=getUsers();
-  if(users.find(function(u){return u.username===username;})){toast("Identifiant déjà utilisé","error");return;}
-  users.push({id:Date.now(),username:username,password:password,name:name,role:role||"Chargé(e) de mission"});
-  localStorage.setItem("hc_users",JSON.stringify(users));
-  renderUsers(); toast("Utilisateur créé ✓","success");
+async function addUser() {
+  var name = prompt("Nom complet :"); if(!name) return;
+  var username = prompt("Identifiant :"); if(!username) return;
+  var password = prompt("Mot de passe :"); if(!password) return;
+  var role = prompt("Rôle :","Chargé(e) de mission");
+  try {
+    var existing = await sbGet("utilisateurs", "username=eq."+encodeURIComponent(username));
+    if (existing.length) { toast("Identifiant déjà utilisé","error"); return; }
+    var hash = await sha256(password);
+    await sbUpsert("utilisateurs", [{username:username, password_hash:hash, name:name, role:role||"Chargé(e) de mission", actif:true}]);
+    renderUsers(); toast("Utilisateur créé ✓","success");
+  } catch(e) { toast("Erreur lors de la création","error"); }
 }
 
-function deleteUser(id) {
+async function deleteUser(id) {
   if(!confirm("Supprimer cet utilisateur ?")) return;
-  var users=getUsers().filter(function(u){return u.id!==id;});
-  localStorage.setItem("hc_users",JSON.stringify(users));
-  renderUsers();
+  try {
+    var url = SUPABASE_URL + "/rest/v1/utilisateurs?id=eq." + id;
+    await fetch(url, { method:"DELETE", headers: sbHeaders() });
+    renderUsers();
+    toast("Utilisateur supprimé","success");
+  } catch(e) { toast("Erreur lors de la suppression","error"); }
 }
 
 function exportData() {
@@ -1430,6 +1538,203 @@ function exportCSV() {
 // ══════════════════════════════════════════════════
 // UTILITAIRES
 // ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
+// VUE KANBAN
+// ══════════════════════════════════════════════════
+var kanbanDragged = null;
+
+function renderKanban() {
+  var q = (document.getElementById("kanban-search") ? document.getElementById("kanban-search").value : "").toLowerCase();
+  var board = document.getElementById("kanban-board");
+  var html = "";
+  STATUTS.forEach(function(statut) {
+    var items = communes.filter(function(c) {
+      return c.statut === statut && (!q || c.nom.toLowerCase().indexOf(q) >= 0);
+    });
+    var color = STATUT_COLORS[statut];
+    html += '<div class="kanban-col" data-statut="' + statut.replace(/"/g,"&quot;") + '">';
+    html += '<div class="kanban-col-header" style="background:' + color + '22;color:' + color + '">' + statut + '<span class="kanban-col-count">' + items.length + '</span></div>';
+    html += '<div class="kanban-cards" data-statut="' + statut.replace(/"/g,"&quot;") + '">';
+    items.forEach(function(c) {
+      html += '<div class="kanban-card" draggable="true" data-nom="' + c.nom.replace(/&/g,"&amp;").replace(/"/g,"&quot;") + '">';
+      html += '<div class="kanban-card-name">' + c.nom + '</div>';
+      html += '<div class="kanban-card-meta">' + (c.etape || "Aucune étape") + (c.contact_nom ? " · " + c.contact_nom : "") + '</div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+  });
+  board.innerHTML = html;
+  bindKanbanEvents();
+}
+
+function bindKanbanEvents() {
+  document.querySelectorAll(".kanban-card").forEach(function(card) {
+    card.addEventListener("click", function() { openCommune(this.dataset.nom); });
+    card.addEventListener("dragstart", function(e) {
+      kanbanDragged = this.dataset.nom;
+      this.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+    });
+    card.addEventListener("dragend", function() { this.classList.remove("dragging"); });
+  });
+  document.querySelectorAll(".kanban-cards").forEach(function(col) {
+    col.addEventListener("dragover", function(e) {
+      e.preventDefault();
+      this.closest(".kanban-col").classList.add("drag-over");
+    });
+    col.addEventListener("dragleave", function() {
+      this.closest(".kanban-col").classList.remove("drag-over");
+    });
+    col.addEventListener("drop", function(e) {
+      e.preventDefault();
+      this.closest(".kanban-col").classList.remove("drag-over");
+      if (!kanbanDragged) return;
+      var newStatut = this.dataset.statut;
+      var c = communes.find(function(x) { return x.nom === kanbanDragged; });
+      if (c && c.statut !== newStatut) {
+        var old = c.statut;
+        c.statut = newStatut;
+        addHistory(c, "Statut : \"" + old + "\" → \"" + newStatut + "\" (Kanban)");
+        saveCommune(c);
+        renderKanban();
+        computeNotifications();
+        toast("Commune déplacée vers \"" + newStatut + "\" ✓", "success");
+      }
+      kanbanDragged = null;
+    });
+  });
+}
+
+// ══════════════════════════════════════════════════
+// IMPORT CSV
+// ══════════════════════════════════════════════════
+function triggerImportCSV() {
+  document.getElementById("csv-file-input").click();
+}
+
+function parseCSVLine(line) {
+  var result = [];
+  var current = "";
+  var inQuotes = false;
+  for (var i = 0; i < line.length; i++) {
+    var ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i+1] === '"') { current += '"'; i++; }
+      else inQuotes = !inQuotes;
+    } else if (ch === "," && !inQuotes) {
+      result.push(current); current = "";
+    } else current += ch;
+  }
+  result.push(current);
+  return result;
+}
+
+async function handleImportCSV(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var text = await file.text();
+  text = text.replace(/^\uFEFF/, "");
+  var lines = text.split(/\r?\n/).filter(function(l) { return l.trim(); });
+  if (lines.length < 2) { toast("Fichier CSV vide ou invalide", "error"); return; }
+
+  var header = parseCSVLine(lines[0]).map(function(h) { return h.trim(); });
+  var colMap = {
+    "Commune": "nom", "Contact": "contact_nom", "Fonction": "contact_fonction",
+    "Téléphone": "contact_tel", "Email": "contact_email", "Statut": "statut",
+    "Étape": "etape", "Référent HC": "referent", "Dernier échange": "dernier_echange",
+    "Prochaine relance": "prochaine_relance", "Commentaires": "commentaires"
+  };
+
+  var updated = 0, errors = 0;
+  showLoading("Import CSV en cours…");
+  for (var i = 1; i < lines.length; i++) {
+    var vals = parseCSVLine(lines[i]);
+    var row = {};
+    header.forEach(function(h, idx) { if (colMap[h]) row[colMap[h]] = vals[idx]; });
+    if (!row.nom) { errors++; continue; }
+    var c = communes.find(function(x) { return x.nom === row.nom; });
+    if (!c) { errors++; continue; }
+    Object.keys(row).forEach(function(k) {
+      if (k !== "nom" && row[k] !== undefined && row[k] !== "") c[k] = row[k];
+    });
+    addHistory(c, "Import CSV par " + (currentUser ? currentUser.name : "Système"));
+    await saveCommune(c);
+    updated++;
+  }
+  hideLoading();
+  event.target.value = "";
+  renderTableBody();
+  renderDashboard();
+  toast(updated + " communes mises à jour" + (errors ? ", " + errors + " ignorées" : ""), errors ? "error" : "success");
+}
+
+// ══════════════════════════════════════════════════
+// HISTORIQUE GLOBAL
+// ══════════════════════════════════════════════════
+function renderHistoriqueGlobal() {
+  var q = (document.getElementById("histo-search") ? document.getElementById("histo-search").value : "").toLowerCase();
+  var entries = [];
+  communes.forEach(function(c) {
+    (c.history || []).forEach(function(h) {
+      entries.push({ commune: c.nom, text: h.text, user: h.user, time: h.time });
+    });
+  });
+  entries.sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
+  if (q) {
+    entries = entries.filter(function(e) {
+      return e.commune.toLowerCase().indexOf(q) >= 0 || (e.user||"").toLowerCase().indexOf(q) >= 0;
+    });
+  }
+  entries = entries.slice(0, 300);
+
+  var html = entries.length ? entries.map(function(e) {
+    var safeNom = e.commune.replace(/&/g,"&amp;").replace(/"/g,"&quot;");
+    return '<div class="histo-entry"><div class="histo-dot"></div><div>' +
+      '<div><span class="histo-commune" data-nom="' + safeNom + '">' + e.commune + '</span> — ' + e.text + '</div>' +
+      '<div class="histo-meta">' + fmtDateTime(e.time) + ' · par ' + e.user + '</div></div></div>';
+  }).join("") : '<div style="padding:40px;text-align:center;color:var(--gray-400)">Aucun historique disponible</div>';
+
+  document.getElementById("historique-global-list").innerHTML = html;
+  document.querySelectorAll(".histo-commune").forEach(function(el) {
+    el.addEventListener("click", function() { openCommune(this.dataset.nom); });
+  });
+}
+
+// ══════════════════════════════════════════════════
+// FICHES PRÉ-REMPLIES (API officielle data.gouv.fr)
+// ══════════════════════════════════════════════════
+async function prefillMaire(nom) {
+  var statusEl = document.getElementById("prefill-status");
+  if (statusEl) statusEl.textContent = "Recherche en cours…";
+  try {
+    var geoRes = await fetch("https://geo.api.gouv.fr/communes?nom=" + encodeURIComponent(nom) + "&codeDepartement=63&fields=nom,code&limit=1");
+    var geoData = await geoRes.json();
+    if (!geoData.length) { if (statusEl) statusEl.textContent = "Commune non trouvée dans la base officielle."; return; }
+    var codeInsee = geoData[0].code;
+
+    var eluRes = await fetch("https://www.data.gouv.fr/api/1/datasets/r/d5f400de-ae3f-4966-8cb6-a85c70c6c24a");
+    // Fallback : utiliser l'annuaire des mairies (API officielle simplifiée)
+    var annuaireRes = await fetch("https://etablissements-publics.api.gouv.fr/v3/communes/" + codeInsee + "/mairie");
+    var annuaireData = await annuaireRes.json();
+    if (annuaireData.features && annuaireData.features.length) {
+      var mairie = annuaireData.features[0].properties;
+      var c = communes.find(function(x) { return x.nom === nom; });
+      if (c) {
+        if (mairie.telephone && mairie.telephone.length) document.querySelector('[data-field="contact_tel"]').value = mairie.telephone[0];
+        if (mairie.email && mairie.email.length) document.querySelector('[data-field="contact_email"]').value = mairie.email[0];
+        if (!c.contact_fonction) document.querySelector('[data-field="contact_fonction"]').value = "Maire";
+        if (statusEl) statusEl.textContent = "✓ Coordonnées de la mairie récupérées. Vérifiez puis sauvegardez.";
+        toast("Données pré-remplies depuis l'annuaire officiel ✓", "success");
+      }
+    } else {
+      if (statusEl) statusEl.textContent = "Aucune coordonnée trouvée dans l'annuaire officiel.";
+    }
+  } catch(e) {
+    if (statusEl) statusEl.textContent = "Erreur lors de la récupération des données.";
+    console.error(e);
+  }
+}
+
 function fmtDate(s){if(!s)return "";try{return new Date(s).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"});}catch(e){return s;}}
 function fmtDateTime(s){if(!s)return "";try{return new Date(s).toLocaleDateString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});}catch(e){return s;}}
 
@@ -1456,24 +1761,23 @@ function closeSidebar() {
   overlay.classList.remove("open");
 }
 
-window.addEventListener("load", function() {
+window.addEventListener("load", async function() {
   document.getElementById("login-user").value = "";
   document.getElementById("login-pass").value = "";
   try {
     var session = sessionStorage.getItem("hc_session");
     if (session) {
       var user = JSON.parse(session);
-      var users = getUsers();
-      var valid = users.find(function(u){return u.username===user.username&&u.password===user.password;});
-      if (valid) {
-        currentUser = valid;
+      var rows = await sbGet("utilisateurs", "id=eq."+user.id+"&select=id,username,name,role,actif");
+      if (rows.length && rows[0].actif !== false) {
+        currentUser = { id: rows[0].id, username: rows[0].username, name: rows[0].name, role: rows[0].role };
         document.getElementById("login-screen").style.display = "none";
         document.getElementById("app").style.display = "block";
         initApp();
         return;
       }
     }
-  } catch(e) {}
+  } catch(e) { console.error(e); }
   document.getElementById("login-screen").style.display = "flex";
 });
 </script>
