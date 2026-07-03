@@ -1001,7 +1001,7 @@ function renderDashboard() {
     '<div class="stat-card"><div class="stat-label">Communes totales</div><div class="stat-value">' + s.total + '</div><div class="stat-sub">Puy-de-Dôme</div></div>' +
     '<div class="stat-card"><div class="stat-label">Contactées</div><div class="stat-value" style="color:var(--cyan)">' + s.contactees + '</div><div class="stat-sub">' + Math.round(s.contactees/Math.max(s.total,1)*100) + '% du total</div><div class="stat-bar"><div class="stat-bar-fill" style="width:' + (s.contactees/Math.max(s.total,1)*100) + '%"></div></div></div>' +
     '<div class="stat-card"><div class="stat-label">Commune intéressée</div><div class="stat-value" style="color:var(--violet)">' + s.interessees + '</div></div>' +
-    '<div class="stat-card"><div class="stat-label">Conventions signées</div><div class="stat-value" style="color:var(--green)">' + s.conventions + '</div><div class="stat-sub">' + s.lancees + ' communes lancées</div></div>';
+    '<div class="stat-card"><div class="stat-label">Lancement réalisé</div><div class="stat-value" style="color:var(--green)">' + s.conventions + '</div><div class="stat-sub">' + Math.round(s.conventions/Math.max(s.total,1)*100) + '% du total</div><div class="stat-bar"><div class="stat-bar-fill" style="width:' + (s.conventions/Math.max(s.total,1)*100) + '%;background:var(--green)"></div></div></div>';
   renderCharts();
 }
 
@@ -1328,8 +1328,8 @@ function renderMapStats() {
     '<div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">' + s.total + '</div></div>' +
     '<div class="stat-card"><div class="stat-label">Contactées</div><div class="stat-value" style="color:var(--cyan)">' + s.contactees + '</div></div>' +
     '<div class="stat-card"><div class="stat-label">Lancement réalisé</div><div class="stat-value" style="color:var(--green)">' + s.conventions + '</div></div>' +
-    '<div class="stat-card"><div class="stat-label">Conventions</div><div class="stat-value" style="color:var(--green)">' + s.conventions + '</div></div>' +
-    '<div class="stat-card"><div class="stat-label">Lancées</div><div class="stat-value" style="color:var(--green)">' + s.lancees + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">HC lancée</div><div class="stat-value" style="color:var(--green)">' + s.lancees + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Suivis effectués</div><div class="stat-value" style="color:var(--navy)">' + s.suivis + '</div></div>' +
     '<div class="stat-card"><div class="stat-label">Avancement</div><div class="stat-value">' + s.avancement + '%</div></div>';
   document.getElementById("map-legend").innerHTML = Object.entries(MAP_COLORS).map(function(kv){return '<div class="legend-item"><div class="legend-dot" style="background:' + kv[1] + '"></div>' + kv[0] + '</div>';}).join("");
 }
