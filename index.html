@@ -115,20 +115,18 @@ td.muted{color:var(--gray-600)}
 .badge-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .s-contacter{background:#F2F2F2;color:#666}.s-contacter .badge-dot{background:#999}
 .s-mail{background:#E3F2FD;color:#1565C0}.s-mail .badge-dot{background:#1565C0}
-.s-relance1{background:#FFF9C4;color:#827717}.s-relance1 .badge-dot{background:#F9A825}
-.s-relance2{background:#FFF3E0;color:#E65100}.s-relance2 .badge-dot{background:#F77F00}
-.s-rdv{background:#F3E5F5;color:#6A1B9A}.s-rdv .badge-dot{background:#8E44AD}
-.s-attente{background:#FFEBEE;color:#C62828}.s-attente .badge-dot{background:#E63946}
-.s-refus{background:#FFEBEE;color:#B71C1C}.s-refus .badge-dot{background:#E63946}
-.s-convention{background:#E8F5E9;color:#1B5E20}.s-convention .badge-dot{background:#6FBE3F}
+.s-relance{background:#FFF9C4;color:#827717}.s-relance .badge-dot{background:#F9A825}
+.s-visio{background:#F3E5F5;color:#6A1B9A}.s-visio .badge-dot{background:#8E44AD}
+.s-rdv{background:#FFF3E0;color:#E65100}.s-rdv .badge-dot{background:#F77F00}
+.s-attente{background:#FFFDE7;color:#827717}.s-attente .badge-dot{background:#FFD93D}
+.s-refus{background:#FFEBEE;color:#B71C1C}.s-refus .badge-dot{background:#c62828}
+.s-lancement{background:#E8F5E9;color:#1B5E20}.s-lancement .badge-dot{background:#6FBE3F}
 .e-presentation{background:#E3F2FD;color:#0D47A1}
 .e-interessee{background:#E8F5E9;color:#1B5E20}
-.e-convention{background:#E8F5E9;color:#2E7D32}
 .e-lancement{background:#FFF9C4;color:#F57F17}
-.e-reunion{background:#F3E5F5;color:#4A148C}
 .e-lancee{background:#E8F5E9;color:#1B5E20;font-weight:700}
-.e-suivi-prog{background:#E3F2FD;color:#1565C0}
 .e-suivi-ok{background:#F1F8E9;color:#33691E}
+.e-bilan{background:#F3E5F5;color:#6A1B9A;font-weight:700}
 .modal-overlay{position:fixed;inset:0;background:rgba(27,42,107,.5);display:none;align-items:flex-start;justify-content:flex-end;z-index:500;backdrop-filter:blur(2px)}
 .modal-overlay.open{display:flex}
 .modal-panel{width:680px;height:100vh;background:white;overflow-y:auto;box-shadow:var(--shadow-lg);animation:slideIn .25s ease}
@@ -209,6 +207,7 @@ td.muted{color:var(--gray-600)}
 ::-webkit-scrollbar-thumb{background:var(--gray-200);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:var(--gray-400)}
 .leaflet-tooltip{font-family:'Montserrat',sans-serif;font-size:12px}
+.map-tooltip-rich{padding:10px 12px!important;border-radius:10px!important;box-shadow:0 4px 16px rgba(27,42,107,.18)!important;border:1px solid var(--gray-200)!important;line-height:1.4!important}
 @media(max-width:1200px){.stats-grid{grid-template-columns:repeat(2,1fr)}.charts-grid{grid-template-columns:1fr}}
 /* ══ RESPONSIVE MOBILE & TABLET ══ */
 
@@ -437,7 +436,7 @@ td.muted{color:var(--gray-600)}
   <header class="topbar">
     <div class="topbar-search">
       <span class="search-icon">🔍</span>
-      <input type="text" placeholder="Rechercher une commune, un élu, un contact…" id="global-search" autocomplete="off" oninput="globalSearch(this.value)">
+      <input type="text" placeholder="Rechercher (appuyez sur /)" id="global-search" autocomplete="off" oninput="globalSearch(this.value)">
       <div class="search-results" id="search-results" style="display:none"></div>
     </div>
     <div class="topbar-actions">
@@ -470,8 +469,9 @@ td.muted{color:var(--gray-600)}
         <div class="table-search" style="max-width:280px"><span class="si">🔍</span><input type="text" placeholder="Rechercher une commune…" id="map-search" autocomplete="off" oninput="mapSearch(this.value)"></div>
         <select class="filter-select" id="map-filter-statut" onchange="updateMapFilter()">
           <option value="">Tous les statuts</option>
-          <option>À contacter</option><option>Mail envoyé</option><option>Relance 1</option><option>Relance 2</option>
-          <option>Rendez-vous programmé</option><option>En attente</option><option>Refus</option><option>Convention signée</option>
+          <option>À contacter</option><option>Mail envoyé</option><option>Relance</option>
+          <option>Visio de présentation</option><option>RV individuel programmé</option>
+          <option>En attente</option><option>Refus</option><option>Lancement réalisé</option>
         </select>
       </div>
       <div id="map-container"></div>
@@ -484,14 +484,15 @@ td.muted{color:var(--gray-600)}
           <div class="table-search"><span class="si">🔍</span><input type="text" placeholder="Rechercher…" id="crm-search" autocomplete="off" oninput="filterTable()"></div>
           <select class="filter-select" id="filter-statut" onchange="filterTable()">
             <option value="">Tous les statuts</option>
-            <option>À contacter</option><option>Mail envoyé</option><option>Relance 1</option><option>Relance 2</option>
-            <option>Rendez-vous programmé</option><option>En attente</option><option>Refus</option><option>Convention signée</option>
+            <option>À contacter</option><option>Mail envoyé</option><option>Relance</option>
+            <option>Visio de présentation</option><option>RV individuel programmé</option>
+            <option>En attente</option><option>Refus</option><option>Lancement réalisé</option>
           </select>
           <select class="filter-select" id="filter-etape" onchange="filterTable()">
             <option value="">Toutes les étapes</option>
-            <option>Présentation</option><option>Commune intéressée</option><option>Convention signée</option>
-            <option>Lancement programmé</option><option>Réunion habitants</option><option>Heure Civique lancée</option>
-            <option>Suivi programmé</option><option>Suivi effectué</option>
+            <option>Présentation</option><option>Commune intéressée</option>
+            <option>Lancement réalisé</option><option>Heure Civique lancée</option>
+            <option>Suivi effectué</option><option>Bilan effectué</option>
           </select>
           <select class="filter-select" id="filter-dept-presence" onchange="filterTable()">
             <option value="">Présence Dpt (RDV)</option>
@@ -597,7 +598,9 @@ td.muted{color:var(--gray-600)}
   <div class="modal-panel">
     <div class="modal-header">
       <div><div class="modal-commune-name" id="modal-commune-name"></div><div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px" id="modal-badges"></div></div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="openCommuneRelative(-1)" title="Commune précédente (←)" style="margin-left:auto">←</button>
+      <button class="modal-close" onclick="openCommuneRelative(1)" title="Commune suivante (→)">→</button>
+      <button class="modal-close" onclick="closeModal()" title="Fermer (Échap)">✕</button>
     </div>
     <div class="modal-body" id="modal-body"></div>
   </div>
@@ -658,13 +661,13 @@ async function sbUpdate(table, id, data) {
 // ══════════════════════════════════════════════════
 var COMMUNES_63 = ["Aigueperse","Aix-la-Fayette","Ambert","Antoingt","Anzat-le-Luguet","Apchat","Arconsat","Ardes","Arlanc","Ars-les-Favets","Artonne","Aubiat","Aubière","Aubusson-d'Auvergne","Augerolles","Augnat","Aulhat-Flat","Aulnat","Aurières","Authezat","Auzat-la-Combelle","Auzelles","Avèze","Ayat-sur-Sioule","Aydat","Baffie","Bagnols","Bansat","Bas-et-Lezat","Beaulieu","Beaumont","Beaumont-lès-Randan","Beauregard-Vendon","Beauregard-l'Évêque","Bergonne","Bertignat","Besse-et-Saint-Anastaise","Beurières","Billom","Biollet","Blanzat","Blot-l'Église","Bongheat","Bort-l'Étang","Boudes","Bourg-Lastic","Bouzel","Brassac-les-Mines","Brenat","Briffons","Bromont-Lamothe","Brousse","Bulhon","Bussières","Bussières-et-Pruns","Busséol","Buxières-sous-Montaigut","Ceilloux","Celles-sur-Durolle","Ceyrat","Ceyssat","Chabreloche","Chadeleuf","Chalus","Chamalières","Chambaron sur Morge","Chambon-sur-Dolore","Chambon-sur-Lac","Champagnat-le-Jeune","Champeix","Champs","Champétières","Chanat-la-Mouteyre","Chanonat","Chapdes-Beaufort","Chappes","Chaptuzat","Charbonnier-les-Mines","Charbonnières-les-Varennes","Charbonnières-les-Vieilles","Charensat","Charnat","Chas","Chassagne","Chastreix","Chaumont-le-Bourg","Chauriat","Chavaroux","Château-sur-Cher","Châteaugay","Châteauneuf-les-Bains","Châtel-Guyon","Châteldon","Cisternes-la-Forêt","Clerlande","Clermont-Ferrand","Clémensat","Collanges","Combrailles","Combronde","Compains","Condat-en-Combraille","Condat-lès-Montboissier","Corent","Coudes","Courgoul","Cournols","Cournon-d'Auvergne","Courpière","Crevant-Laveine","Cros","Culhat","Cunlhat","Cébazat","Dauzat-sur-Vodable","Davayat","Domaize","Doranges","Dorat","Dore-l'Église","Durmignat","Durtol","Effiat","Ennezat","Entraigues","Enval","Escoutoux","Espinasse","Espinchal","Espirat","Estandeuil","Esteil","Fayet-Ronaye","Fayet-le-Château","Fernoël","Fournols","Gelles","Gerzat","Giat","Gignat","Gimeaux","Glaine-Montaigut","Gouttières","Grandeyrolles","Grandrif","Grandval","Herment","Heume-l'Église","Isserteaux","Issoire","Job","Joze","Jozerand","Jumeaux","La Bourboule","La Celle","La Cellette","La Chapelle-Agnon","La Chapelle-Marcousse","La Chapelle-sur-Usson","La Chaulme","La Crouzille","La Forie","La Godivelle","La Goutelle","La Monnerie-le-Montel","La Renaudie","La Roche-Blanche","La Roche-Noire","La Sauvetat","La Tour-d'Auvergne","Labessette","Lachaux","Lamontgie","Landogne","Lapeyrouse","Laps","Laqueuille","Larodde","Lastic","Le Breuil-sur-Couze","Le Broc","Le Brugeron","Le Cendre","Le Cheix-sur-Morge","Le Crest","Le Monestier","Le Quartier","Le Vernet-Chaméane","Le Vernet-Sainte-Marguerite","Lempdes","Lempty","Les Ancizes-Comps","Les Deux-Rives","Les Martres-d'Artière","Les Martres-de-Veyre","Les Pradeaux","Lezoux","Limons","Lisseuil","Loubeyrat","Ludesse","Lussat","Luzillat","Madriat","Malauzat","Malintrat","Manglieu","Manzat","Marat","Marcillat","Mareugheol","Maringues","Marsac-en-Livradois","Marsat","Martres-sur-Morge","Mauzun","Mayres","Mazaye","Mazoires","Medeyrolles","Meilhaud","Menat","Messeix","Mirefleurs","Miremont","Moissat","Mons","Mont-Dore","Montaigut-en-Combraille","Montaigut-le-Blanc","Montcel","Montel-de-Gelat","Montfermy","Montmorin","Montpensier","Montpeyroux","Moriat","Moureuille","Mozac","Mur-sur-Allier","Murat-le-Quaire","Murol","Ménétrol","Neschers","Neuf-Église","Neuville","Noalhat","Nohanent","Nonette-Orsonnette","Novacelles","Nébouzat","Néronde-sur-Dore","Olby","Olliergues","Olloix","Olmet","Orbeil","Orcet","Orcines","Orcival","Orléat","Palladuc","Pardines","Parent","Parentignat","Paslières","Perpezat","Perrier","Peschadoires","Peslières","Pessat-Villeneuve","Picherande","Pignols","Pionsat","Plauzat","Pont-du-Château","Pontaumur","Pontgibaud","Pouzol","Prompsat","Prondines","Pulvérières","Puy-Guillaume","Puy-Saint-Gulmier","Pérignat-lès-Sarliève","Pérignat-sur-Allier","Queuille","Randan","Ravel","Reignat","Rentières","Riom","Ris","Roche-Charles-la-Mayrand","Roche-d'Agoux","Rochefort-Montagne","Romagnat","Royat","Saillant","Saint-Agoulin","Saint-Alyre-d'Arlanc","Saint-Alyre-ès-Montagne","Saint-Amant-Roche-Savine","Saint-Amant-Tallende","Saint-André-le-Coq","Saint-Angel","Saint-Anthème","Saint-Avit","Saint-Babel","Saint-Beauzire","Saint-Bonnet-le-Bourg","Saint-Bonnet-le-Chastel","Saint-Bonnet-lès-Allier","Saint-Bonnet-près-Orcival","Saint-Bonnet-près-Riom","Saint-Clément-de-Régnat","Saint-Clément-de-Valorgue","Saint-Denis-Combarnazat","Saint-Dier-d'Auvergne","Saint-Diéry","Saint-Donat","Saint-Ferréol-des-Côtes","Saint-Floret","Saint-Flour-l'Étang","Saint-Gal-sur-Sioule","Saint-Genès-Champanelle","Saint-Genès-Champespe","Saint-Genès-du-Retz","Saint-Genès-la-Tourette","Saint-Georges-de-Mons","Saint-Georges-sur-Allier","Saint-Germain-Lembron","Saint-Germain-l'Herm","Saint-Germain-près-Herment","Saint-Gervais-d'Auvergne","Saint-Gervais-sous-Meymont","Saint-Gervazy","Saint-Hilaire","Saint-Hilaire-la-Croix","Saint-Hilaire-les-Monges","Saint-Hérent","Saint-Ignat","Saint-Jacques-d'Ambur","Saint-Jean-Saint-Gervais","Saint-Jean-d'Heurs","Saint-Jean-des-Ollières","Saint-Jean-en-Val","Saint-Julien-Puy-Lavèze","Saint-Julien-de-Coppel","Saint-Julien-la-Geneste","Saint-Just","Saint-Laure","Saint-Maigner","Saint-Martin-d'Ollières","Saint-Martin-des-Olmes","Saint-Martin-des-Plains","Saint-Maurice","Saint-Maurice-près-Pionsat","Saint-Myon","Saint-Nectaire","Saint-Ours","Saint-Pardoux","Saint-Pierre-Colamine","Saint-Pierre-Roche","Saint-Pierre-la-Bourlhonne","Saint-Pierre-le-Chastel","Saint-Priest-Bramefant","Saint-Priest-des-Champs","Saint-Quentin-sur-Sauxillanges","Saint-Quintin-sur-Sioule","Saint-Romain","Saint-Rémy-de-Blot","Saint-Rémy-de-Chargnat","Saint-Rémy-sur-Durolle","Saint-Sandoux","Saint-Saturnin","Saint-Sauves-d'Auvergne","Saint-Sauveur-la-Sagne","Saint-Sulpice","Saint-Sylvestre-Pragoulin","Saint-Victor-Montvianeix","Saint-Victor-la-Rivière","Saint-Vincent","Saint-Yvoine","Saint-Éloy-la-Glacière","Saint-Éloy-les-Mines","Saint-Étienne-des-Champs","Saint-Étienne-sur-Usson","Sainte-Agathe","Sainte-Catherine","Sainte-Christine","Sallèdes","Sardon","Saulzet-le-Froid","Sauret-Besserve","Saurier","Sauvagnat","Sauvagnat-Sainte-Marthe","Sauvessanges","Sauviat","Sauxillanges","Savennes","Sayat","Sermentizon","Servant","Seychalles","Singles","Solignat","Sugères","Surat","Tallende","Tauves","Teilhet","Teilhède","Ternant-les-Eaux","Thiers","Thiolières","Thuret","Tortebesse","Tours-sur-Meymont","Tourzel-Ronzières","Tralaigues","Trémouille-Saint-Loup","Trézioux","Usson","Valbeleix","Valcivières","Valz-sous-Châteauneuf","Varennes-sur-Morge","Varennes-sur-Usson","Vassel","Vensat","Vergheas","Verneugheol","Vernines","Verrières","Vertaizon","Vertolaye","Veyre-Monton","Vic-le-Comte","Vichel","Villeneuve","Villeneuve-les-Cerfs","Villossanges","Vinzelles","Virlet","Viscomtat","Vitrac","Viverols","Vodable","Voingt","Vollore-Montagne","Vollore-Ville","Volvic","Youx","Yronde-et-Buron","Yssac-la-Tourette","Échandelys","Égliseneuve-d'Entraigues","Égliseneuve-des-Liards","Égliseneuve-près-Billom","Églisolles"];
 
-var STATUTS = ["À contacter","Mail envoyé","Relance 1","Relance 2","Rendez-vous programmé","En attente","Refus","Convention signée"];
-var STATUT_CLASSES = {"À contacter":"s-contacter","Mail envoyé":"s-mail","Relance 1":"s-relance1","Relance 2":"s-relance2","Rendez-vous programmé":"s-rdv","En attente":"s-attente","Refus":"s-refus","Convention signée":"s-convention"};
-var STATUT_COLORS = {"À contacter":"#999","Mail envoyé":"#1565C0","Relance 1":"#F9A825","Relance 2":"#F77F00","Rendez-vous programmé":"#8E44AD","En attente":"#E63946","Refus":"#c62828","Convention signée":"#6FBE3F"};
-var ETAPES = ["","Présentation","Commune intéressée","Convention signée","Lancement programmé","Réunion habitants","Heure Civique lancée","Suivi programmé","Suivi effectué"];
-var ETAPE_CLASSES = {"Présentation":"e-presentation","Commune intéressée":"e-interessee","Convention signée":"e-convention","Lancement programmé":"e-lancement","Réunion habitants":"e-reunion","Heure Civique lancée":"e-lancee","Suivi programmé":"e-suivi-prog","Suivi effectué":"e-suivi-ok"};
-var ETAPE_COLORS = {"Présentation":"#1565C0","Commune intéressée":"#2E7D32","Convention signée":"#388E3C","Lancement programmé":"#F57F17","Réunion habitants":"#4A148C","Heure Civique lancée":"#1B5E20","Suivi programmé":"#0D47A1","Suivi effectué":"#33691E"};
-var MAP_COLORS = {"À contacter":"#CCCCCC","Mail envoyé":"#1565C0","Relance 1":"#F9A825","Relance 2":"#F77F00","Rendez-vous programmé":"#8E44AD","En attente":"#E63946","Refus":"#c62828","Convention signée":"#6FBE3F"};
+var STATUTS = ["À contacter","Mail envoyé","Relance","Visio de présentation","RV individuel programmé","En attente","Refus","Lancement réalisé"];
+var STATUT_CLASSES = {"À contacter":"s-contacter","Mail envoyé":"s-mail","Relance":"s-relance","Visio de présentation":"s-visio","RV individuel programmé":"s-rdv","En attente":"s-attente","Refus":"s-refus","Lancement réalisé":"s-lancement"};
+var STATUT_COLORS = {"À contacter":"#999","Mail envoyé":"#1565C0","Relance":"#F9A825","Visio de présentation":"#8E44AD","RV individuel programmé":"#F77F00","En attente":"#FFD93D","Refus":"#c62828","Lancement réalisé":"#6FBE3F"};
+var ETAPES = ["","Présentation","Commune intéressée","Lancement réalisé","Heure Civique lancée","Suivi effectué","Bilan effectué"];
+var ETAPE_CLASSES = {"Présentation":"e-presentation","Commune intéressée":"e-interessee","Lancement réalisé":"e-lancement","Heure Civique lancée":"e-lancee","Suivi effectué":"e-suivi-ok","Bilan effectué":"e-bilan"};
+var ETAPE_COLORS = {"Présentation":"#1565C0","Commune intéressée":"#2E7D32","Lancement réalisé":"#F57F17","Heure Civique lancée":"#1B5E20","Suivi effectué":"#33691E","Bilan effectué":"#6A1B9A"};
+var MAP_COLORS = {"À contacter":"#CCCCCC","Mail envoyé":"#1565C0","Relance":"#F9A825","Visio de présentation":"#8E44AD","RV individuel programmé":"#F77F00","En attente":"#FFD93D","Refus":"#c62828","Lancement réalisé":"#6FBE3F"};
 var USERS_DEFAULT = [{id:1,username:"admin",password:"admin123",name:"Admin",role:"Administrateur"},{id:2,username:"marie",password:"marie2024",name:"Marie Dupont",role:"Chargée de mission"}];
 
 // ══════════════════════════════════════════════════
@@ -784,6 +787,35 @@ async function initApp() {
     if (!e.target.closest(".topbar-search")) document.getElementById("search-results").style.display = "none";
     if (!e.target.closest(".notif-btn") && !e.target.closest("#notif-panel")) document.getElementById("notif-panel").classList.remove("open");
     if (!e.target.closest("#status-menu")) document.getElementById("status-menu").style.display = "none";
+  });
+
+  // Raccourcis clavier globaux
+  document.addEventListener("keydown", function(e) {
+    var tag = (e.target.tagName || "").toLowerCase();
+    var isTyping = tag === "input" || tag === "textarea" || tag === "select";
+    var modalOpen = document.getElementById("commune-modal").classList.contains("open");
+
+    // "/" : focus recherche globale (sauf si on tape déjà dans un champ)
+    if (e.key === "/" && !isTyping) {
+      e.preventDefault();
+      document.getElementById("global-search").focus();
+      return;
+    }
+
+    // Échap : fermer fiche, panneau notif, ou menu statut
+    if (e.key === "Escape") {
+      if (modalOpen) { closeModal(); return; }
+      document.getElementById("notif-panel").classList.remove("open");
+      document.getElementById("status-menu").style.display = "none";
+      document.getElementById("global-search").blur();
+      return;
+    }
+
+    // ← / → : naviguer entre communes dans la fiche (uniquement si fiche ouverte et pas en train de taper)
+    if (modalOpen && !isTyping) {
+      if (e.key === "ArrowLeft") { e.preventDefault(); openCommuneRelative(-1); }
+      if (e.key === "ArrowRight") { e.preventDefault(); openCommuneRelative(1); }
+    }
   });
 
   await loadFromSupabase();
@@ -955,9 +987,9 @@ function showPage(page) {
 function getStats() {
   var total = communes.length;
   var contactees = communes.filter(function(c) { return c.statut !== "À contacter"; }).length;
-  var rdv = communes.filter(function(c) { return c.statut === "Rendez-vous programmé"; }).length;
-  var interessees = communes.filter(function(c) { return ["Commune intéressée","Convention signée","Lancement programmé","Réunion habitants","Heure Civique lancée","Suivi programmé","Suivi effectué"].indexOf(c.etape) >= 0; }).length;
-  var conventions = communes.filter(function(c) { return c.statut === "Convention signée"; }).length;
+  var rdv = communes.filter(function(c) { return c.statut === "RV individuel programmé"; }).length;
+  var interessees = communes.filter(function(c) { return ["Commune intéressée","Lancement réalisé","Heure Civique lancée","Suivi effectué","Bilan effectué"].indexOf(c.etape) >= 0; }).length;
+  var conventions = communes.filter(function(c) { return c.statut === "Lancement réalisé"; }).length;
   var lancees = communes.filter(function(c) { return c.etape === "Heure Civique lancée"; }).length;
   var suivis = communes.filter(function(c) { return c.etape === "Suivi effectué"; }).length;
   return {total:total,contactees:contactees,rdv:rdv,interessees:interessees,conventions:conventions,lancees:lancees,suivis:suivis,avancement:Math.round(lancees/Math.max(total,1)*100)};
@@ -968,7 +1000,7 @@ function renderDashboard() {
   document.getElementById("stats-grid").innerHTML =
     '<div class="stat-card"><div class="stat-label">Communes totales</div><div class="stat-value">' + s.total + '</div><div class="stat-sub">Puy-de-Dôme</div></div>' +
     '<div class="stat-card"><div class="stat-label">Contactées</div><div class="stat-value" style="color:var(--cyan)">' + s.contactees + '</div><div class="stat-sub">' + Math.round(s.contactees/Math.max(s.total,1)*100) + '% du total</div><div class="stat-bar"><div class="stat-bar-fill" style="width:' + (s.contactees/Math.max(s.total,1)*100) + '%"></div></div></div>' +
-    '<div class="stat-card"><div class="stat-label">RDV programmés</div><div class="stat-value" style="color:var(--violet)">' + s.rdv + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Commune intéressée</div><div class="stat-value" style="color:var(--violet)">' + s.interessees + '</div></div>' +
     '<div class="stat-card"><div class="stat-label">Conventions signées</div><div class="stat-value" style="color:var(--green)">' + s.conventions + '</div><div class="stat-sub">' + s.lancees + ' communes lancées</div></div>';
   renderCharts();
 }
@@ -1133,6 +1165,20 @@ function openCommune(nom) {
   });
 }
 
+function getNavList() {
+  return (filteredCommunes && filteredCommunes.length) ? filteredCommunes : communes;
+}
+
+function openCommuneRelative(dir) {
+  if (!currentModalCommune) return;
+  var list = getNavList();
+  var idx = list.findIndex(function(c) { return c.nom === currentModalCommune; });
+  if (idx < 0) return;
+  var newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= list.length) return;
+  openCommune(list[newIdx].nom);
+}
+
 function buildModalBody(c) {
   var html = '<div class="modal-section"><div class="modal-section-title">Statut & Suivi</div><div class="form-grid">';
   html += '<div class="form-group"><label class="form-label">État de la prise de contact</label><select class="form-select" data-field="statut">';
@@ -1281,7 +1327,7 @@ function renderMapStats() {
   document.getElementById("map-stats-grid").innerHTML =
     '<div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">' + s.total + '</div></div>' +
     '<div class="stat-card"><div class="stat-label">Contactées</div><div class="stat-value" style="color:var(--cyan)">' + s.contactees + '</div></div>' +
-    '<div class="stat-card"><div class="stat-label">RDV</div><div class="stat-value" style="color:var(--violet)">' + s.rdv + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Lancement réalisé</div><div class="stat-value" style="color:var(--green)">' + s.conventions + '</div></div>' +
     '<div class="stat-card"><div class="stat-label">Conventions</div><div class="stat-value" style="color:var(--green)">' + s.conventions + '</div></div>' +
     '<div class="stat-card"><div class="stat-label">Lancées</div><div class="stat-value" style="color:var(--green)">' + s.lancees + '</div></div>' +
     '<div class="stat-card"><div class="stat-label">Avancement</div><div class="stat-value">' + s.avancement + '%</div></div>';
@@ -1308,8 +1354,24 @@ function initMap() {
           var nom = feat.properties.nom;
           layer.bindTooltip(function() {
             var c = communes.find(function(x){return normName(x.nom)===normName(nom);});
-            return "<b>" + nom + "</b><br>Statut : " + (c?c.statut:"À contacter") + "<br>Étape : " + (c&&c.etape?c.etape:"—") + "<br>Référent : " + (c&&c.referent?c.referent:"—");
-          },{sticky:true});
+            var html = '<div style="min-width:200px">';
+            html += '<div style="font-weight:800;font-size:13px;margin-bottom:4px">' + nom + '</div>';
+            html += '<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">';
+            html += '<span style="width:8px;height:8px;border-radius:50%;background:' + (MAP_COLORS[c?c.statut:"À contacter"]||"#CCC") + ';display:inline-block"></span>';
+            html += '<span style="font-size:11px">' + (c?c.statut:"À contacter") + '</span></div>';
+            if (c && c.etape) html += '<div style="font-size:11px;color:#666;margin-bottom:4px">📍 ' + c.etape + '</div>';
+            if (c && c.contact_nom) html += '<div style="font-size:11px;margin-bottom:2px">👤 ' + c.contact_nom + (c.contact_fonction?' ('+c.contact_fonction+')':'') + '</div>';
+            if (c && c.referent) html += '<div style="font-size:11px;color:#888;margin-bottom:2px">🎯 Référent : ' + c.referent + '</div>';
+            if (c && c.prochaine_relance) {
+              var overdue = new Date(c.prochaine_relance) < new Date();
+              html += '<div style="font-size:11px;font-weight:600;color:' + (overdue?'#E63946':'#1565C0') + ';margin-top:4px">📅 Prochaine action : ' + fmtDate(c.prochaine_relance) + (overdue?' (en retard)':'') + '</div>';
+            } else {
+              html += '<div style="font-size:11px;color:#aaa;margin-top:4px;font-style:italic">Aucune action planifiée</div>';
+            }
+            html += '<div style="font-size:10px;color:#aaa;margin-top:6px;border-top:1px solid #eee;padding-top:4px">Cliquer pour ouvrir la fiche</div>';
+            html += '</div>';
+            return html;
+          },{sticky:true, direction:"top", className:"map-tooltip-rich"});
           layer.on("click",function(){var c=communes.find(function(x){return normName(x.nom)===normName(nom);});if(c)openCommune(c.nom);});
           layer.on("mouseover",function(e){e.target.setStyle({weight:2,fillOpacity:.9});});
           layer.on("mouseout",function(e){geojsonLayer.resetStyle(e.target);});
@@ -1414,7 +1476,7 @@ function computeNotifications() {
       else if(d.getTime()===tomorrow.getTime()) notifs.push({type:"warning",icon:"🟡",title:"Relance demain",desc:c.nom,commune:c.nom});
       else if(d<today) notifs.push({type:"urgent",icon:"⚠️",title:"Relance en retard",desc:c.nom+" · "+fmtDate(c.prochaine_relance),commune:c.nom});
     }
-    if(c.dernier_echange&&["À contacter","Refus","Convention signée"].indexOf(c.statut)<0){
+    if(c.dernier_echange&&["À contacter","Refus","Lancement réalisé"].indexOf(c.statut)<0){
       var diff=(today-new Date(c.dernier_echange))/86400000;
       if(diff>30) notifs.push({type:"info",icon:"💤",title:"Sans nouvelles depuis "+Math.round(diff)+"j",desc:c.nom,commune:c.nom});
     }
