@@ -374,6 +374,15 @@ td.muted{color:var(--gray-600)}
 .kanban-col.drag-over{background:#E3F2FD}
 
 /* HISTORIQUE GLOBAL */
+.contact-card{background:var(--gray-50);border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid var(--gray-100)}
+.contact-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.contact-card-name{font-size:13px;font-weight:700;color:var(--navy)}
+.contact-card-fonction{font-size:12px;color:var(--gray-400);margin-top:2px}
+.contact-principal-badge{background:#E3F2FD;color:#1565C0;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;vertical-align:middle;margin-left:6px}
+.contact-remove-btn{background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:4px;transition:all .15s;flex-shrink:0}
+.contact-remove-btn:hover{background:var(--coral);color:white}
+.contact-card-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.contact-field{font-size:13px}
 .histo-entry{display:flex;gap:14px;padding:14px 20px;border-bottom:1px solid var(--gray-100)}
 .histo-entry:hover{background:var(--gray-50)}
 .histo-entry:last-child{border-bottom:none}
@@ -810,6 +819,16 @@ function setSyncStatus(status, msg) {
 
 function makeCommune(nom) {
   var m = MAIRES_63[nom] || {};
+  var contacts = [];
+  if (m.contact_nom) {
+    contacts.push({
+      nom: m.contact_nom,
+      fonction: "Maire",
+      tel: m.contact_tel || "",
+      email: m.contact_email || "",
+      principal: true
+    });
+  }
   return {
     nom: nom,
     statut: "À contacter",
@@ -829,6 +848,7 @@ function makeCommune(nom) {
     dept_presence_cp: "",
     canton: m.canton || "",
     prioritaire: m.prioritaire || false,
+    contacts: contacts,
     history: [],
     agenda: []
   };
@@ -937,7 +957,8 @@ function mapRowToCommune(row) {
     history: Array.isArray(row.history) ? row.history : [],
     agenda: Array.isArray(row.agenda) ? row.agenda : [],
     canton: row.canton || "",
-    prioritaire: row.prioritaire || false
+    prioritaire: row.prioritaire || false,
+    contacts: Array.isArray(row.contacts) ? row.contacts : (row.contact_nom ? [{nom:row.contact_nom,fonction:row.contact_fonction||"Maire",tel:row.contact_tel||"",email:row.contact_email||"",principal:true}] : [])
   };
 }
 
@@ -1005,6 +1026,7 @@ async function saveCommune(c) {
       cp_date: c.cp_date || null, dept_presence_cp: c.dept_presence_cp,
       history: c.history, agenda: c.agenda,
       canton: c.canton || "", prioritaire: c.prioritaire || false,
+      contacts: c.contacts || [],
       updated_at: new Date().toISOString(),
       updated_by: currentUser ? currentUser.name : "Système"
     };
@@ -1233,8 +1255,11 @@ function openCommune(nom) {
   document.getElementById("modal-body").innerHTML = buildModalBody(c);
   document.getElementById("commune-modal").classList.add("open");
   document.querySelectorAll("#modal-body input,#modal-body select,#modal-body textarea").forEach(function(el) {
-    el.addEventListener("change", function() { saveModalField(el); });
+    if (!el.classList.contains("contact-field")) {
+      el.addEventListener("change", function() { saveModalField(el); });
+    }
   });
+  bindContactsEvents();
 }
 
 function getNavList() {
@@ -1273,32 +1298,17 @@ function buildModalBody(c) {
 
   var mairie = MAIRES_63[c.nom] || {};
 
-  // ── Section Mairie ──
+  // ── Section Mairie — Contacts ──
   html += '<div class="modal-section">';
   html += '<div class="modal-section-title">🏛️ Mairie</div>';
-  // Infos mairie (lecture seule) issues du fichier officiel
-  if (mairie.adresse_rue || mairie.parti_politique) {
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">';
-    html += '<div style="background:var(--gray-50);border-radius:8px;padding:10px 12px">';
-    html += '<div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Élu·e (source officielle)</div>';
-    html += '<div style="font-size:13px;font-weight:700">' + (mairie.titre||"") + ' ' + (mairie.maire_nom||"—") + '</div>';
-    if (mairie.parti_politique) html += '<div style="font-size:11px;color:var(--gray-400);margin-top:2px;font-style:italic">' + mairie.parti_politique + '</div>';
-    html += '</div>';
-    html += '<div style="background:var(--gray-50);border-radius:8px;padding:10px 12px">';
-    html += '<div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Adresse</div>';
-    if (mairie.adresse_rue) html += '<div style="font-size:12px">' + mairie.adresse_rue + '</div>';
-    html += '<div style="font-size:12px">' + (mairie.adresse_cp||"") + ' ' + (mairie.adresse_ville||"") + '</div>';
-    html += '</div>';
-    html += '</div>';
+  // Adresse mairie (depuis fichier officiel, compacte)
+  if (mairie.adresse_rue) {
+    html += '<div style="font-size:12px;color:var(--gray-600);margin-bottom:12px">📍 ' + mairie.adresse_rue + ', ' + (mairie.adresse_cp||"") + ' ' + (mairie.adresse_ville||"") + '</div>';
   }
-  html += '<button class="btn-secondary" style="margin-bottom:12px" onclick="prefillMaire(\'' + c.nom.replace(/'/g,"\\'") + '\')">⚡ Pré-remplir depuis les données officielles</button>';
-  html += '<div id="prefill-status" style="font-size:11px;color:var(--gray-400);margin-bottom:8px"></div>';
-  html += '<div class="form-grid">';
-  html += '<div class="form-group"><label class="form-label">Nom du contact</label><input class="form-input" data-field="contact_nom" value="' + (c.contact_nom||"") + '" placeholder="Nom et prénom"></div>';
-  html += '<div class="form-group"><label class="form-label">Fonction</label><input class="form-input" data-field="contact_fonction" value="' + (c.contact_fonction||"") + '" placeholder="Maire, DGS…"></div>';
-  html += '<div class="form-group"><label class="form-label">Téléphone</label><input class="form-input" data-field="contact_tel" value="' + (c.contact_tel||"") + '" placeholder="04…"></div>';
-  html += '<div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" data-field="contact_email" value="' + (c.contact_email||"") + '" placeholder="mairie@…"></div>';
-  html += '</div></div>';
+  // Liste des contacts
+  html += '<div id="contacts-list">' + renderContactsList(c) + '</div>';
+  html += '<button class="btn-secondary" style="margin-top:10px" onclick="addContact(\'' + c.nom.replace(/'/g,"\\'") + '\')">+ Ajouter un contact</button>';
+  html += '</div>';
 
   html += '<div class="modal-section"><div class="modal-section-title">Commentaires & Notes</div>';
   html += '<div class="form-group full" style="margin-bottom:12px"><label class="form-label">Commentaires</label><textarea class="form-textarea" data-field="commentaires" placeholder="Compte-rendu d\'échanges…">' + (c.commentaires||"") + '</textarea></div>';
@@ -1880,6 +1890,94 @@ function prefillMaire(nom) {
   toast("Fiche pré-remplie : " + mairie.contact_nom + " ✓", "success");
 }
 
+// ══════════════════════════════════════════════════
+// GESTION DES CONTACTS MAIRIE
+// ══════════════════════════════════════════════════
+
+function renderContactsList(comm) {
+  if (!comm.contacts || !comm.contacts.length) {
+    return '<div style="color:var(--gray-400);font-size:13px;padding:8px 0">Aucun contact enregistré.</div>';
+  }
+  return comm.contacts.map(function(ct, idx) {
+    var nomEsc = (comm.nom||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;");
+    return '<div class="contact-card" data-idx="' + idx + '">' +
+      '<div class="contact-card-header">' +
+        '<div>' +
+          '<div class="contact-card-name">' + (ct.nom||"—") + (ct.principal ? ' <span class="contact-principal-badge">Contact principal</span>' : '') + '</div>' +
+          '<div class="contact-card-fonction">' + (ct.fonction||"") + '</div>' +
+        '</div>' +
+        '<button class="contact-remove-btn" data-nom="' + nomEsc + '" data-idx="' + idx + '" title="Supprimer ce contact">✕</button>' +
+      '</div>' +
+      '<div class="contact-card-fields">' +
+        '<input class="form-input contact-field" data-nom="' + nomEsc + '" data-idx="' + idx + '" data-key="nom" value="' + (ct.nom||"") + '" placeholder="Nom et prénom">' +
+        '<input class="form-input contact-field" data-nom="' + nomEsc + '" data-idx="' + idx + '" data-key="fonction" value="' + (ct.fonction||"") + '" placeholder="Fonction (Maire, DGS, Chargé de mission…)">' +
+        '<input class="form-input contact-field" data-nom="' + nomEsc + '" data-idx="' + idx + '" data-key="tel" value="' + (ct.tel||"") + '" placeholder="Téléphone">' +
+        '<input class="form-input contact-field" type="email" data-nom="' + nomEsc + '" data-idx="' + idx + '" data-key="email" value="' + (ct.email||"") + '" placeholder="Email">' +
+      '</div>' +
+    '</div>';
+  }).join("") ;
+}
+
+function bindContactsEvents() {
+  // Champs de saisie des contacts
+  document.querySelectorAll(".contact-field").forEach(function(el) {
+    el.addEventListener("change", function() {
+      var nom = this.dataset.nom;
+      var idx = parseInt(this.dataset.idx);
+      var key = this.dataset.key;
+      var val = this.value;
+      var comm = communes.find(function(x) { return x.nom === nom; });
+      if (!comm || !comm.contacts || !comm.contacts[idx]) return;
+      comm.contacts[idx][key] = val;
+      // Sync contact principal vers les champs legacy
+      if (comm.contacts[idx].principal) {
+        if (key === "nom") comm.contact_nom = val;
+        if (key === "fonction") comm.contact_fonction = val;
+        if (key === "tel") comm.contact_tel = val;
+        if (key === "email") comm.contact_email = val;
+      }
+      addHistory(comm, "Contact \"" + (comm.contacts[idx].nom||"?") + "\" : " + key + " mis à jour");
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(function() {
+        saveCommune(comm);
+        toast("Contact sauvegardé ✓", "success");
+      }, 800);
+    });
+  });
+  // Boutons supprimer
+  document.querySelectorAll(".contact-remove-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      var nom = this.dataset.nom;
+      var idx = parseInt(this.dataset.idx);
+      var comm = communes.find(function(x) { return x.nom === nom; });
+      if (!comm || !comm.contacts) return;
+      if (!confirm("Supprimer ce contact ?")) return;
+      var removed = comm.contacts.splice(idx, 1);
+      addHistory(comm, "Contact supprimé : " + (removed[0] ? removed[0].nom||"?" : "?"));
+      saveCommune(comm);
+      document.getElementById("contacts-list").innerHTML = renderContactsList(comm);
+      bindContactsEvents();
+      toast("Contact supprimé", "success");
+    });
+  });
+}
+
+function addContact(nomCommune) {
+  var comm = communes.find(function(x) { return x.nom === nomCommune; });
+  if (!comm) return;
+  if (!comm.contacts) comm.contacts = [];
+  comm.contacts.push({ nom: "", fonction: "", tel: "", email: "", principal: false });
+  document.getElementById("contacts-list").innerHTML = renderContactsList(comm);
+  bindContactsEvents();
+  // Focus sur le premier champ du nouveau contact
+  var cards = document.querySelectorAll(".contact-card");
+  if (cards.length) {
+    var lastCard = cards[cards.length - 1];
+    var firstInput = lastCard.querySelector("input");
+    if (firstInput) firstInput.focus();
+  }
+}
+
 async function importAllMaires() {
   var btn = document.getElementById("btn-import-maires");
   var status = document.getElementById("import-maires-status");
@@ -1901,6 +1999,17 @@ async function importAllMaires() {
         changed = true;
       }
     });
+    // Mettre à jour ou créer le contact principal dans contacts[]
+    if (!c.contacts) c.contacts = [];
+    var principal = c.contacts.find(function(ct) { return ct.principal; });
+    if (principal) {
+      principal.nom = u.contact_nom || principal.nom;
+      principal.fonction = "Maire";
+      principal.tel = u.contact_tel || principal.tel;
+      principal.email = u.contact_email || principal.email;
+    } else if (u.contact_nom) {
+      c.contacts.unshift({ nom: u.contact_nom, fonction: "Maire", tel: u.contact_tel||"", email: u.contact_email||"", principal: true });
+    }
     if (changed) {
       addHistory(c, "Import automatique des données mairie (" + u.contact_nom + ")");
       try {
