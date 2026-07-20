@@ -392,6 +392,14 @@ td.muted{color:var(--gray-600)}
 .histo-meta{font-size:11px;color:var(--gray-400);margin-top:3px}
 
 
+/* ── Suivi PcD ── */
+.pcd-statut-en-attente{background:#F2F2F2;color:#666}
+.pcd-statut-echange{background:#E3F2FD;color:#1565C0}
+.pcd-statut-calee{background:#FFF9C4;color:#827717}
+.pcd-statut-realise{background:#E8F5E9;color:#1B5E20}
+.pcd-action-btn{background:none;border:none;cursor:pointer;font-size:14px;padding:4px 6px;border-radius:4px;transition:background .15s}
+.pcd-action-btn:hover{background:var(--gray-100)}
+
 /* ── Tooltip canton ── */
 .canton-tag {
   position: relative;
@@ -494,6 +502,7 @@ td.muted{color:var(--gray-600)}
     </div>
     <div class="sidebar-nav">
       <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard"><span class="nav-icon">🏠</span> Tableau de bord</div>
+      <div class="nav-item" onclick="showPage('suivi-pcd')" id="nav-suivi-pcd"><span class="nav-icon">📌</span> Suivi PcD</div>
       <div class="nav-item" onclick="showPage('map')" id="nav-map"><span class="nav-icon">🗺️</span> Carte du déploiement</div>
       <div class="nav-item" onclick="showPage('communes')" id="nav-communes"><span class="nav-icon">🏘️</span> Communes</div>
       <div class="nav-item" onclick="showPage('kanban')" id="nav-kanban"><span class="nav-icon">📋</span> Vue Kanban</div>
@@ -535,6 +544,45 @@ td.muted{color:var(--gray-600)}
       <div class="charts-grid">
         <div class="chart-card"><div class="chart-title">Répartition des statuts</div><div class="chart-wrap"><canvas id="chart-statuts"></canvas></div></div>
         <div class="chart-card"><div class="chart-title">Progression des étapes</div><div class="chart-wrap"><canvas id="chart-etapes"></canvas></div></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-suivi-pcd">
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+          <div class="page-title">📌 Suivi PcD</div>
+          <div class="page-subtitle">Sollicitations communes — Vice-Président / Président</div>
+        </div>
+        <button class="btn-primary" onclick="openSuiviPcdModal(null)">+ Nouvelle sollicitation</button>
+      </div>
+      <!-- Filtres -->
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+        <div class="table-search" style="max-width:280px"><span class="si">🔍</span><input type="text" placeholder="Rechercher une commune…" id="pcd-search" autocomplete="off" oninput="renderSuiviPcd()"></div>
+        <select class="filter-select" id="pcd-filter-statut" onchange="renderSuiviPcd()">
+          <option value="">Tous les statuts</option>
+          <option>En attente</option>
+          <option>Échange en cours</option>
+          <option>Date calée</option>
+          <option>Réalisé</option>
+        </select>
+      </div>
+      <!-- Tableau -->
+      <div class="table-card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Commune</th>
+              <th>Statut sollicitation</th>
+              <th>Date échange</th>
+              <th>Actions envisagées</th>
+              <th>Date à caler (VP/Président)</th>
+              <th>Interlocuteur</th>
+              <th style="width:80px"></th>
+            </tr></thead>
+            <tbody id="pcd-tbody"></tbody>
+          </table>
+        </div>
+        <div style="padding:12px 20px;font-size:12px;color:var(--gray-400)" id="pcd-count"></div>
       </div>
     </div>
 
@@ -712,6 +760,17 @@ td.muted{color:var(--gray-600)}
       <button class="modal-close" onclick="closeModal()" title="Fermer (Échap)">✕</button>
     </div>
     <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- Modal Suivi PcD -->
+<div class="modal-overlay" id="pcd-modal" onclick="handlePcdModalClick(event)">
+  <div class="modal-panel" style="width:580px">
+    <div class="modal-header">
+      <div><div class="modal-commune-name" id="pcd-modal-title">Nouvelle sollicitation</div></div>
+      <button class="modal-close" onclick="closePcdModal()">✕</button>
+    </div>
+    <div class="modal-body" id="pcd-modal-body"></div>
   </div>
 </div>
 
@@ -971,6 +1030,7 @@ async function initApp() {
   renderDashboard();
   renderUsers();
   computeNotifications();
+  loadSuiviPcd();
 
   // Synchronisation en temps réel via Supabase Realtime
   setupRealtimeSync();
@@ -1054,6 +1114,8 @@ async function loadFromSupabase() {
     communes = data.map(mapRowToCommune);
     setSyncStatus("ok", "● Connecté");
     hideLoading();
+    // Rafraîchir PcD si déjà chargé
+    if (suiviPcdData.length) { autoPopulatePcd().then(renderSuiviPcd); }
   } catch(e) {
     setSyncStatus("error", "✕ Hors ligne");
     hideLoading();
@@ -1124,6 +1186,7 @@ function showPage(page) {
   document.getElementById("nav-" + page).classList.add("active");
   document.getElementById("notif-panel").classList.remove("open");
   closeSidebar(); // Close on mobile after nav
+  if (page === "suivi-pcd") renderSuiviPcd();
   if (page === "communes") renderTable();
   if (page === "dashboard") renderDashboard();
   if (page === "map") { renderMapStats(); initMap(); }
@@ -2140,6 +2203,263 @@ function cantonTagHTML(canton) {
   }
   return '<span class="canton-tag">🗺️ ' + canton + '<span class="canton-tooltip">' + tooltipInner + '</span></span>';
 }
+// ══════════════════════════════════════════════════
+// SUIVI PcD — données & fonctions
+// ══════════════════════════════════════════════════
+var suiviPcdData = [];
+var pcdSaveTimeout = null;
+var currentPcdId = null;
+
+// Statuts disponibles
+var PCD_STATUTS = ["En attente","Échange en cours","Date calée","Réalisé"];
+var PCD_STATUT_CSS = {
+  "En attente": "pcd-statut-en-attente",
+  "Échange en cours": "pcd-statut-echange",
+  "Date calée": "pcd-statut-calee",
+  "Réalisé": "pcd-statut-realise"
+};
+
+// ── Chargement depuis Supabase ────────────────────────────────────────────────
+async function loadSuiviPcd() {
+  try {
+    var rows = await sbGet("suivi_pcd", "order=updated_at.desc&limit=500");
+    suiviPcdData = rows;
+    // Synchronisation auto : créer une entrée pour chaque commune avec statut
+    // "Rendez-vous programmé" ou "Lancement réalisé" qui n'a pas encore d'entrée PcD
+    await autoPopulatePcd();
+  } catch(e) {
+    console.error("loadSuiviPcd:", e);
+  }
+}
+
+async function autoPopulatePcd() {
+  var existingNoms = new Set(suiviPcdData.map(function(r) { return r.commune_nom; }));
+  var toAdd = communes.filter(function(c) {
+    return !existingNoms.has(c.nom) &&
+      ["RV individuel programmé","Lancement réalisé","Visio de présentation"].indexOf(c.statut) >= 0;
+  });
+  for (var i = 0; i < toAdd.length; i++) {
+    var comm = toAdd[i];
+    try {
+      var res = await sbUpsert("suivi_pcd", [{
+        commune_nom: comm.nom,
+        statut_sollicitation: "En attente",
+        date_echange: comm.dernier_echange || null,
+        actions_envisagees: "",
+        date_agenda: "",
+        interlocuteur: comm.contact_nom || "",
+        notes: "",
+        updated_by: "Auto"
+      }]);
+      if (res && res[0]) suiviPcdData.push(res[0]);
+    } catch(e) { /* silencieux */ }
+  }
+}
+
+// ── Sauvegarde ────────────────────────────────────────────────────────────────
+async function savePcdRow(row) {
+  setSyncStatus("loading", "⟳ Sauvegarde…");
+  try {
+    var payload = {
+      commune_nom: row.commune_nom,
+      statut_sollicitation: row.statut_sollicitation || "En attente",
+      date_echange: row.date_echange || null,
+      actions_envisagees: row.actions_envisagees || "",
+      date_agenda: row.date_agenda || "",
+      interlocuteur: row.interlocuteur || "",
+      notes: row.notes || "",
+      updated_at: new Date().toISOString(),
+      updated_by: currentUser ? currentUser.name : "Système"
+    };
+    if (row.id) {
+      await sbUpdate("suivi_pcd", row.id, payload);
+    } else {
+      var res = await sbUpsert("suivi_pcd", [payload]);
+      if (res && res[0]) row.id = res[0].id;
+    }
+    setSyncStatus("ok", "● Sauvegardé");
+  } catch(e) {
+    setSyncStatus("error", "✕ Erreur");
+    toast("Erreur de sauvegarde PcD", "error");
+  }
+}
+
+// ── Rendu du tableau ──────────────────────────────────────────────────────────
+function renderSuiviPcd() {
+  var q = (document.getElementById("pcd-search") ? document.getElementById("pcd-search").value : "").toLowerCase();
+  var fs = document.getElementById("pcd-filter-statut") ? document.getElementById("pcd-filter-statut").value : "";
+
+  var data = suiviPcdData.filter(function(r) {
+    var matchQ = !q || (r.commune_nom||"").toLowerCase().indexOf(q) >= 0 ||
+      (r.actions_envisagees||"").toLowerCase().indexOf(q) >= 0 ||
+      (r.interlocuteur||"").toLowerCase().indexOf(q) >= 0;
+    var matchS = !fs || r.statut_sollicitation === fs;
+    return matchQ && matchS;
+  });
+
+  var html = "";
+  data.forEach(function(r) {
+    var statCss = PCD_STATUT_CSS[r.statut_sollicitation] || "pcd-statut-en-attente";
+    var mInfo = MAIRES_63[r.commune_nom] || {};
+    var communeStatut = "";
+    var comm = communes.find(function(x) { return x.nom === r.commune_nom; });
+    if (comm) {
+      communeStatut = '<span class="badge ' + (STATUT_CLASSES[comm.statut]||"s-contacter") + '" style="font-size:10px;margin-left:6px">' + comm.statut + '</span>';
+    }
+    html += '<tr class="pcd-row">';
+    html += '<td class="fw">' + r.commune_nom + communeStatut;
+    if (mInfo.canton) html += '<br><span style="font-size:11px;font-weight:400">' + cantonTagHTML(mInfo.canton) + '</span>';
+    html += '</td>';
+    html += '<td><span class="badge ' + statCss + '" style="cursor:pointer" onclick="cyclePcdStatut(' + r.id + ')">' + (r.statut_sollicitation||"En attente") + '</span></td>';
+    html += '<td style="font-size:12px">' + (r.date_echange ? fmtDate(r.date_echange) : '<span style="color:var(--gray-200)">—</span>') + '</td>';
+    html += '<td style="font-size:12px;max-width:200px">' + (r.actions_envisagees ? '<span title="' + r.actions_envisagees.replace(/"/g,"&quot;") + '">' + r.actions_envisagees.substring(0,60) + (r.actions_envisagees.length>60?"…":"") + '</span>' : '<span style="color:var(--gray-200)">—</span>') + '</td>';
+    html += '<td style="font-size:12px">' + (r.date_agenda || '<span style="color:var(--gray-200)">—</span>') + '</td>';
+    html += '<td style="font-size:12px">' + (r.interlocuteur || '<span style="color:var(--gray-200)">—</span>') + '</td>';
+    html += '<td style="white-space:nowrap">';
+    html += '<button class="pcd-action-btn" title="Modifier" onclick="openSuiviPcdModal(' + r.id + ')">✏️</button>';
+    html += '<button class="pcd-action-btn" title="Ouvrir la fiche commune" onclick="openCommune(\'' + r.commune_nom.replace(/'/g,"\\'") + '\')">🏘️</button>';
+    html += '</td>';
+    html += '</tr>';
+  });
+
+  document.getElementById("pcd-tbody").innerHTML = html || '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--gray-400)">Aucune sollicitation enregistrée</td></tr>';
+  document.getElementById("pcd-count").textContent = data.length + " sollicitation" + (data.length > 1 ? "s" : "");
+}
+
+// ── Cycle de statut rapide (clic sur badge) ───────────────────────────────────
+async function cyclePcdStatut(id) {
+  var row = suiviPcdData.find(function(r) { return r.id === id; });
+  if (!row) return;
+  var idx = PCD_STATUTS.indexOf(row.statut_sollicitation);
+  row.statut_sollicitation = PCD_STATUTS[(idx + 1) % PCD_STATUTS.length];
+  await savePcdRow(row);
+  renderSuiviPcd();
+}
+
+// ── Modal création / édition ──────────────────────────────────────────────────
+function openSuiviPcdModal(id) {
+  currentPcdId = id;
+  var row = id ? suiviPcdData.find(function(r) { return r.id === id; }) : null;
+  var isNew = !row;
+
+  document.getElementById("pcd-modal-title").textContent = isNew ? "Nouvelle sollicitation" : "Sollicitation — " + row.commune_nom;
+
+  var html = '<div class="form-grid">';
+
+  // Commune (autocomplete si nouvelle)
+  if (isNew) {
+    html += '<div class="form-group full"><label class="form-label">Commune *</label>';
+    html += '<input class="form-input" id="pcd-commune" list="pcd-communes-list" placeholder="Nom de la commune" autocomplete="off">';
+    html += '<datalist id="pcd-communes-list">' + communes.map(function(c) { return '<option value="' + c.nom + '">'; }).join("") + '</datalist>';
+    html += '</div>';
+  } else {
+    var comm = communes.find(function(x) { return x.nom === row.commune_nom; });
+    html += '<div class="form-group full"><label class="form-label">Commune</label>';
+    html += '<div style="font-size:14px;font-weight:700;padding:9px 0">' + row.commune_nom;
+    if (comm) html += ' <span class="badge ' + (STATUT_CLASSES[comm.statut]||"s-contacter") + '" style="font-size:11px">' + comm.statut + '</span>';
+    html += '</div></div>';
+  }
+
+  // Statut
+  html += '<div class="form-group"><label class="form-label">Statut de la sollicitation</label><select class="form-select" id="pcd-statut">';
+  PCD_STATUTS.forEach(function(s) {
+    html += '<option value="' + s + '" ' + (row && row.statut_sollicitation === s ? "selected" : "") + '>' + s + '</option>';
+  });
+  html += '</select></div>';
+
+  // Interlocuteur
+  html += '<div class="form-group"><label class="form-label">Interlocuteur</label>';
+  html += '<input class="form-input" id="pcd-interlocuteur" value="' + (row ? (row.interlocuteur||"") : "") + '" placeholder="Nom du contact…"></div>';
+
+  // Date échange
+  html += '<div class="form-group"><label class="form-label">Date des échanges</label>';
+  html += '<input class="form-input" type="date" id="pcd-date-echange" value="' + (row && row.date_echange ? row.date_echange : "") + '"></div>';
+
+  // Date agenda VP/Président
+  html += '<div class="form-group"><label class="form-label">Date à caler (VP ou Président)</label>';
+  html += '<input class="form-input" id="pcd-date-agenda" value="' + (row ? (row.date_agenda||"") : "") + '" placeholder="ex : semaine du 12 mai, jeudi 15h…"></div>';
+
+  // Actions envisagées
+  html += '<div class="form-group full"><label class="form-label">Actions envisagées</label>';
+  html += '<textarea class="form-textarea" id="pcd-actions" style="min-height:90px" placeholder="Décrire les actions envisagées…">' + (row ? (row.actions_envisagees||"") : "") + '</textarea></div>';
+
+  // Notes
+  html += '<div class="form-group full"><label class="form-label">Notes internes</label>';
+  html += '<textarea class="form-textarea" id="pcd-notes" placeholder="Notes complémentaires…">' + (row ? (row.notes||"") : "") + '</textarea></div>';
+
+  html += '</div>';
+
+  html += '<div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">';
+  if (!isNew) {
+    html += '<button class="btn-secondary" style="color:var(--coral)" onclick="deletePcdRow(' + id + ')">🗑️ Supprimer</button>';
+  }
+  html += '<button class="btn-secondary" onclick="closePcdModal()">Annuler</button>';
+  html += '<button class="btn-primary" onclick="savePcdModal()">💾 Enregistrer</button>';
+  html += '</div>';
+
+  document.getElementById("pcd-modal-body").innerHTML = html;
+  document.getElementById("pcd-modal").classList.add("open");
+
+  // Pré-remplir l'interlocuteur si nouvelle + commune connue
+  if (isNew) {
+    var inp = document.getElementById("pcd-commune");
+    inp.addEventListener("change", function() {
+      var mInfo = MAIRES_63[this.value] || {};
+      var interEl = document.getElementById("pcd-interlocuteur");
+      if (interEl && !interEl.value && mInfo.contact_nom) interEl.value = mInfo.contact_nom;
+    });
+  }
+}
+
+async function savePcdModal() {
+  var isNew = !currentPcdId;
+  var row;
+
+  if (isNew) {
+    var nomCommune = (document.getElementById("pcd-commune").value || "").trim();
+    if (!nomCommune) { toast("Veuillez saisir une commune", "error"); return; }
+    row = { commune_nom: nomCommune };
+    suiviPcdData.unshift(row);
+  } else {
+    row = suiviPcdData.find(function(r) { return r.id === currentPcdId; });
+    if (!row) return;
+  }
+
+  row.statut_sollicitation = document.getElementById("pcd-statut").value;
+  row.interlocuteur = document.getElementById("pcd-interlocuteur").value;
+  row.date_echange = document.getElementById("pcd-date-echange").value || null;
+  row.date_agenda = document.getElementById("pcd-date-agenda").value;
+  row.actions_envisagees = document.getElementById("pcd-actions").value;
+  row.notes = document.getElementById("pcd-notes").value;
+
+  await savePcdRow(row);
+  closePcdModal();
+  renderSuiviPcd();
+  toast((isNew ? "Sollicitation créée" : "Mis à jour") + " ✓", "success");
+}
+
+async function deletePcdRow(id) {
+  if (!confirm("Supprimer cette sollicitation ?")) return;
+  try {
+    var url = SUPABASE_URL + "/rest/v1/suivi_pcd?id=eq." + id;
+    await fetch(url, { method: "DELETE", headers: sbHeaders() });
+    suiviPcdData = suiviPcdData.filter(function(r) { return r.id !== id; });
+    closePcdModal();
+    renderSuiviPcd();
+    toast("Supprimé", "success");
+  } catch(e) { toast("Erreur suppression", "error"); }
+}
+
+function closePcdModal() {
+  document.getElementById("pcd-modal").classList.remove("open");
+  currentPcdId = null;
+}
+
+function handlePcdModalClick(e) {
+  if (e.target === document.getElementById("pcd-modal")) closePcdModal();
+}
+
+
 function fmtDate(s){if(!s)return "";try{return new Date(s).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"});}catch(e){return s;}}
 function fmtDateTime(s){if(!s)return "";try{return new Date(s).toLocaleDateString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});}catch(e){return s;}}
 
