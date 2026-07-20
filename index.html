@@ -405,13 +405,13 @@ td.muted{color:var(--gray-600)}
 .canton-tag:hover .canton-tooltip {
   opacity: 1;
   pointer-events: auto;
-  transform: translateY(0);
+  transform: translateX(-50%) translateY(0);
 }
 .canton-tooltip {
   position: absolute;
-  bottom: calc(100% + 8px);
+  top: calc(100% + 8px);
   left: 50%;
-  transform: translateX(-50%) translateY(4px);
+  transform: translateX(-50%) translateY(-4px);
   background: var(--navy);
   color: white;
   border-radius: 8px;
@@ -429,11 +429,11 @@ td.muted{color:var(--gray-600)}
 .canton-tooltip::after {
   content: '';
   position: absolute;
-  top: 100%;
+  bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
   border: 5px solid transparent;
-  border-top-color: var(--navy);
+  border-bottom-color: var(--navy);
 }
 .canton-tooltip-title {
   font-weight: 700;
